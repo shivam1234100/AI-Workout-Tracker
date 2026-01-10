@@ -1,19 +1,18 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth, useUser } from '@clerk/clerk-expo';
+import { useAuthStore } from '../store/authStore';
 
 export default function ProfileScreen({ navigation }: any) {
-    const { signOut } = useAuth();
-    const { user } = useUser();
+    const { signOut, user } = useAuthStore();
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50 p-4">
-            <Text className="text-2xl font-bold text-gray-900 mb-6">Profile</Text>
+        <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900 p-4">
+            <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Profile</Text>
 
             <View className="bg-white p-6 rounded-xl mb-6 shadow-sm">
-                <Text className="text-lg font-semibold text-gray-800">{user?.primaryEmailAddress?.emailAddress}</Text>
-                <Text className="text-gray-500 mt-1">Member since {user?.createdAt ? new Date(user.createdAt).getFullYear() : '...'}</Text>
+                <Text className="text-lg font-semibold text-gray-800">{user?.email}</Text>
+                <Text className="text-gray-500 mt-1">Local Account</Text>
             </View>
 
             <TouchableOpacity

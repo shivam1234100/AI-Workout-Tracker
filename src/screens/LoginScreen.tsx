@@ -1,28 +1,25 @@
+import { useAuthStore } from '../store/authStore';
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSignIn } from '@clerk/clerk-expo';
-
 export default function LoginScreen({ navigation }: any) {
-    const { signIn, setActive, isLoaded } = useSignIn();
+    const { signIn } = useAuthStore();
 
     const [emailAddress, setEmailAddress] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
     const onSignInPress = async () => {
-        if (!isLoaded) return;
+        if (!emailAddress || !password) {
+            Alert.alert("Error", "Please fill in all fields");
+            return;
+        }
         setLoading(true);
         try {
-            const completeSignIn = await signIn.create({
-                identifier: emailAddress,
-                password,
-            });
-
-            // This indicates the user is signed in
-            await setActive({ session: completeSignIn.createdSessionId });
+            await signIn(emailAddress, password);
+            // Navigation handled by RootNavigator state change
         } catch (err: any) {
-            Alert.alert("Error", err.errors[0]?.message || "Something went wrong");
+            Alert.alert("Error", "Login failed");
         } finally {
             setLoading(false);
         }

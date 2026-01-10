@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useUser } from '@clerk/clerk-expo';
-import { MOCK_STATS, MOCK_RECENT_WORKOUTS } from '../constants/mockData';
-import { Play, TrendingUp, Calendar, Activity } from 'lucide-react-native';
+import { useAuthStore } from '../store/authStore';
+import { useWorkoutStore } from '../store/workoutStore';
+import { Play, TrendingUp, Calendar, Activity, User, Dumbbell, ChevronRight, PlayCircle } from 'lucide-react-native';
 
 export default function HomeScreen({ navigation }: any) {
-    const { user } = useUser();
+    const { user } = useAuthStore();
+    const { history } = useWorkoutStore();
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -15,69 +16,74 @@ export default function HomeScreen({ navigation }: any) {
         return 'Good Evening';
     };
 
+    const lastWorkoutDate = history.length > 0 ? history[0].endTime : null;
+
     return (
-        <SafeAreaView className="flex-1 bg-gray-50 p-4">
-            <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Header */}
-                <View className="mb-6">
-                    <Text className="text-gray-500 font-medium text-base">{getGreeting()},</Text>
-                    <Text className="text-3xl font-bold text-gray-900">{user?.firstName || 'Athlete'}!</Text>
+        <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900 p-4 pb-0">
+            {/* Header */}
+            <View className="flex-row justify-between items-center mb-6">
+                <View>
+                    <Text className="text-gray-500 dark:text-gray-400 text-sm font-medium">{getGreeting()},</Text>
+                    <Text className="text-2xl font-bold text-gray-900 dark:text-white">{user?.name || user?.email?.split('@')[0] || 'Athlete'}</Text>
                 </View>
-
-                {/* Start Workout Card */}
                 <TouchableOpacity
-                    className="bg-blue-600 p-6 rounded-2xl shadow-sm mb-6 flex-row justify-between items-center"
-                    onPress={() => navigation.navigate('Workout')}
+                    className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-sm"
+                    onPress={() => navigation.navigate('Profile')}
                 >
-                    <View>
-                        <Text className="text-white text-xl font-bold mb-1">Start Workout</Text>
-                        <Text className="text-blue-100">Ready to crush it today?</Text>
-                    </View>
-                    <View className="bg-blue-500/30 p-3 rounded-full">
-                        <Play color="white" size={28} fill="white" />
-                    </View>
+                    <User color="#4b5563" size={24} className="dark:text-gray-300" />
                 </TouchableOpacity>
+            </View>
 
-                {/* Quick Stats Grid */}
-                <Text className="text-lg font-bold text-gray-900 mb-4">Your Progress</Text>
-                <View className="flex-row justify-between mb-6">
-                    <View className="bg-white p-4 rounded-xl flex-1 mr-2 shadow-sm items-center justify-center">
-                        <Activity size={24} color="#f59e0b" className="mb-2" />
-                        <Text className="text-2xl font-bold text-gray-900">{MOCK_STATS.totalWorkouts}</Text>
-                        <Text className="text-gray-500 text-xs">Workouts</Text>
-                    </View>
-                    <View className="bg-white p-4 rounded-xl flex-1 mx-2 shadow-sm items-center justify-center">
-                        <TrendingUp size={24} color="#10b981" className="mb-2" />
-                        <Text className="text-2xl font-bold text-gray-900">{MOCK_STATS.totalExercises}</Text>
-                        <Text className="text-gray-500 text-xs">Exercises</Text>
-                    </View>
-                    <View className="bg-white p-4 rounded-xl flex-1 ml-2 shadow-sm items-center justify-center">
-                        <Calendar size={24} color="#6366f1" className="mb-2" />
-                        <Text className="text-base font-bold text-gray-900 mt-2">{new Date(MOCK_STATS.lastWorkout).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</Text>
-                        <Text className="text-gray-500 text-xs">Last Active</Text>
-                    </View>
+            {/* Quick Stats Row */}
+            <View className="flex-row justify-between mb-8">
+                <View className="bg-white dark:bg-gray-800 p-4 rounded-2xl flex-1 mr-2 shadow-sm items-center">
+                    <Dumbbell color="#2563eb" size={24} className="mb-2" />
+                    <Text className="text-2xl font-bold text-gray-900 dark:text-white">{history.length}</Text>
+                    <Text className="text-gray-500 dark:text-gray-400 text-xs">Workouts</Text>
                 </View>
+                <View className="bg-white dark:bg-gray-800 p-4 rounded-2xl flex-1 mx-2 shadow-sm items-center">
+                    <Activity color="#ec4899" size={24} className="mb-2" />
+                    <Text className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {history.reduce((acc: number, curr: any) => acc + (curr.exercises?.length || 0), 0)}
+                    </Text>
+                    <Text className="text-gray-500 dark:text-gray-400 text-xs">Sets Done</Text>
+                </View>
+                <View className="bg-white dark:bg-gray-800 p-4 rounded-2xl flex-1 ml-2 shadow-sm items-center">
+                    <Calendar color="#7c3aed" size={24} className="mb-2" />
+                    <Text className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                        {lastWorkoutDate ? new Date(lastWorkoutDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '-'}
+                    </Text>
+                    <Text className="text-gray-500 dark:text-gray-400 text-xs">Last Active</Text>
+                </View>
+            </View>
 
-                {/* Recent Workouts */}
-                <Text className="text-lg font-bold text-gray-900 mb-4">Recent Activity</Text>
-                {MOCK_RECENT_WORKOUTS.map((workout) => (
-                    <View key={workout.id} className="bg-white p-4 rounded-xl mb-3 shadow-sm flex-row items-center border border-gray-100">
-                        <View className="bg-blue-50 p-3 rounded-lg mr-4">
-                            <DumbbellIcon color="#2563eb" size={20} />
+            {/* Recent Activity */}
+            <Text className="text-xl font-bold text-gray-900 dark:text-white mb-4">Recent Activity</Text>
+            <View className="flex-1">
+                {history.slice(0, 3).map((workout: any) => (
+                    <TouchableOpacity
+                        key={workout.id}
+                        className="bg-white dark:bg-gray-800 p-4 rounded-xl mb-3 shadow-sm flex-row items-center"
+                        onPress={() => navigation.navigate('History', { screen: 'WorkoutDetail', params: { workout } })}
+                    >
+                        <View className="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-xl mr-4">
+                            <PlayCircle color="#2563eb" size={24} />
                         </View>
                         <View className="flex-1">
-                            <Text className="text-gray-900 font-semibold">{workout.name}</Text>
-                            <Text className="text-gray-500 text-sm">{workout.exercises} Exercises</Text>
+                            <Text className="text-lg font-bold text-gray-900 dark:text-white">{workout.name || 'Workout'}</Text>
+                            <Text className="text-gray-500 dark:text-gray-400 text-sm">
+                                {new Date(workout.endTime || Date.now()).toLocaleDateString()} • {workout.exercises?.length || 0} Exercises
+                            </Text>
                         </View>
-                        <Text className="text-gray-400 text-sm">{new Date(workout.date).toLocaleDateString()}</Text>
-                    </View>
+                        <ChevronRight color="#9ca3af" size={20} />
+                    </TouchableOpacity>
                 ))}
-            </ScrollView>
+                {history.length === 0 && (
+                    <View className="bg-white dark:bg-gray-800 p-6 rounded-xl items-center border border-dashed border-gray-300 dark:border-gray-700">
+                        <Text className="text-gray-400 dark:text-gray-500">No recent activity</Text>
+                    </View>
+                )}
+            </View>
         </SafeAreaView>
     );
-}
-
-// Small helper component for the list icon if needed, or import form Lucide
-function DumbbellIcon({ size, color }: any) {
-    return <Activity size={size} color={color} />
 }

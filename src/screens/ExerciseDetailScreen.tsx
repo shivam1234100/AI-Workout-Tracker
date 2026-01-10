@@ -3,10 +3,12 @@ import { View, Text, ScrollView, Image, TouchableOpacity, Alert } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, PlayCircle } from 'lucide-react-native';
 import { useWorkoutStore } from '../store/workoutStore';
+import { useColorScheme } from 'nativewind';
 
 export default function ExerciseDetailScreen({ route, navigation }: any) {
     const { exercise } = route.params;
     const { activeWorkout, startWorkout, addExercise } = useWorkoutStore();
+    const { colorScheme } = useColorScheme();
 
     const handleAddToWorkout = () => {
         if (!activeWorkout) {
@@ -21,54 +23,61 @@ export default function ExerciseDetailScreen({ route, navigation }: any) {
                             // Need a small timeout or improved store logic to ensure sync, 
                             // but Zustand is sync usually.
                             addExercise(exercise);
-                            navigation.navigate('Workout');
+                            navigation.navigate('Main', { screen: 'Workout' });
                         }
                     }
                 ]
             );
         } else {
             addExercise(exercise);
-            navigation.navigate('Workout');
+            // Navigate to the Main tab navigator, then to the Workout screen specifically
+            navigation.navigate('Main', { screen: 'Workout' });
         }
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
+        <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Header Image */}
                 <View className="relative">
                     <Image
                         source={{ uri: exercise.image }}
-                        className="w-full h-72 bg-gray-200"
+                        className="w-full h-72 bg-gray-200 dark:bg-gray-800"
                     />
                     <TouchableOpacity
-                        className="absolute top-4 left-4 bg-white/80 p-2 rounded-full"
+                        className="absolute top-4 left-4 bg-white/80 dark:bg-black/60 p-2 rounded-full"
                         onPress={() => navigation.goBack()}
                     >
-                        <ArrowLeft color="#000" size={24} />
+                        <ArrowLeft color={colorScheme === 'dark' ? '#fff' : '#000'} size={24} />
                     </TouchableOpacity>
                 </View>
 
-                <View className="p-6 -mt-6 bg-white rounded-t-3xl">
+                <View className="p-6 -mt-6 bg-white dark:bg-gray-900 rounded-t-3xl border-t border-transparent dark:border-gray-800">
                     <View className="flex-row justify-between items-start mb-2">
                         <View>
-                            <Text className="text-3xl font-bold text-gray-900 mb-1">{exercise.name}</Text>
-                            <Text className="text-blue-600 font-medium text-base">{exercise.muscleGroup} • {exercise.equipment}</Text>
+                            <Text className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{exercise.name}</Text>
+                            <Text className="text-blue-600 dark:text-blue-400 font-medium text-base">{exercise.muscleGroup} • {exercise.equipment}</Text>
                         </View>
-                        <View className="bg-orange-100 px-3 py-1 rounded-full">
-                            <Text className="text-orange-700 text-xs font-bold uppercase">{exercise.difficulty}</Text>
+                        <View className={`px-3 py-1 rounded-full ${exercise.difficulty === 'Beginner' ? 'bg-green-100 dark:bg-green-900/30' :
+                            exercise.difficulty === 'Intermediate' ? 'bg-orange-100 dark:bg-orange-900/30' :
+                                'bg-red-100 dark:bg-red-900/30'
+                            }`}>
+                            <Text className={`text-xs font-bold uppercase ${exercise.difficulty === 'Beginner' ? 'text-green-700 dark:text-green-400' :
+                                exercise.difficulty === 'Intermediate' ? 'text-orange-700 dark:text-orange-400' :
+                                    'text-red-700 dark:text-red-400'
+                                }`}>{exercise.difficulty}</Text>
                         </View>
                     </View>
 
-                    <View className="h-[1px] bg-gray-100 my-6" />
+                    <View className="h-[1px] bg-gray-100 dark:bg-gray-800 my-6" />
 
-                    <Text className="text-xl font-bold text-gray-900 mb-4">Instructions</Text>
+                    <Text className="text-xl font-bold text-gray-900 dark:text-white mb-4">Instructions</Text>
                     {exercise.instructions.map((step: string, index: number) => (
                         <View key={index} className="flex-row mb-4">
-                            <View className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center mr-4">
-                                <Text className="text-blue-600 font-bold">{index + 1}</Text>
+                            <View className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/50 items-center justify-center mr-4">
+                                <Text className="text-blue-600 dark:text-blue-400 font-bold">{index + 1}</Text>
                             </View>
-                            <Text className="flex-1 text-gray-600 text-base leading-6 mt-1">{step}</Text>
+                            <Text className="flex-1 text-gray-600 dark:text-gray-300 text-base leading-6 mt-1">{step}</Text>
                         </View>
                     ))}
 
@@ -79,7 +88,7 @@ export default function ExerciseDetailScreen({ route, navigation }: any) {
             {/* Floating Action Button for adding to workout */}
             <View className="absolute bottom-8 left-6 right-6">
                 <TouchableOpacity
-                    className="bg-blue-600 py-4 rounded-xl flex-row justify-center items-center shadow-lg active:bg-blue-700"
+                    className="bg-blue-600 hover:bg-blue-700 py-4 rounded-xl flex-row justify-center items-center shadow-lg"
                     onPress={handleAddToWorkout}
                 >
                     <PlayCircle color="white" size={24} className="mr-2" />

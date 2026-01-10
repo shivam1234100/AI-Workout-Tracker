@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { NavigationContainer } from '@react-navigation/native';
+
 import { Home, Dumbbell, PlayCircle, History, BrainCircuit, User } from 'lucide-react-native';
-import { useAuth } from '@clerk/clerk-expo';
+
 
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
@@ -14,6 +14,7 @@ import HistoryScreen from '../screens/HistoryScreen';
 import AIScreen from '../screens/AIScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ExerciseDetailScreen from '../screens/ExerciseDetailScreen';
+import WorkoutDetailScreen from '../screens/WorkoutDetailScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -93,25 +94,22 @@ function AuthStack() {
     );
 }
 
-export default function RootNavigator() {
-    const { isSignedIn, isLoaded } = useAuth();
+import { useAuthStore } from '../store/authStore';
 
-    if (!isLoaded) {
-        return null; // Or a splash screen
-    }
+export default function RootNavigator() {
+    const { isAuthenticated } = useAuthStore();
 
     return (
-        <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
-                {isSignedIn ? (
-                    <>
-                        <Stack.Screen name="Main" component={MainTabs} />
-                        <Stack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} />
-                    </>
-                ) : (
-                    <Stack.Screen name="Auth" component={AuthStack} />
-                )}
-            </Stack.Navigator>
-        </NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+            {isAuthenticated ? (
+                <>
+                    <Stack.Screen name="Main" component={MainTabs} />
+                    <Stack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} />
+                    <Stack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
+                </>
+            ) : (
+                <Stack.Screen name="Auth" component={AuthStack} />
+            )}
+        </Stack.Navigator>
     );
 }
