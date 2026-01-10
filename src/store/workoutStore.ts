@@ -25,11 +25,12 @@ export interface WorkoutState {
     history: any[]; // Using any[] for now to match structure, refining later if needed
 
     startWorkout: () => void;
-    finishWorkout: () => void;
+    finishWorkout: (name?: string) => void;
     addExercise: (exercise: any) => void;
     addSet: (exerciseIndex: number) => void;
     updateSet: (exerciseIndex: number, setIndex: number, field: keyof Set, value: any) => void;
     removeSet: (exerciseIndex: number, setIndex: number) => void;
+    deleteWorkout: (id: string) => void;
 }
 
 export const useWorkoutStore = create<WorkoutState>()(
@@ -45,14 +46,15 @@ export const useWorkoutStore = create<WorkoutState>()(
                 }
             }),
 
-            finishWorkout: () => {
+            finishWorkout: (name) => {
                 const { activeWorkout, history } = get();
                 if (activeWorkout) {
                     const completedWorkout = {
                         ...activeWorkout,
                         id: Math.random().toString(),
                         endTime: Date.now(),
-                        date: new Date().toISOString()
+                        date: new Date().toISOString(),
+                        name: name || `Workout ${new Date().toLocaleDateString()}`
                     };
                     set({
                         activeWorkout: null,
@@ -60,6 +62,10 @@ export const useWorkoutStore = create<WorkoutState>()(
                     });
                 }
             },
+
+            deleteWorkout: (id) => set((state) => ({
+                history: state.history.filter(w => w.id !== id)
+            })),
 
             addExercise: (exercise) => set((state) => {
                 if (!state.activeWorkout) return state;

@@ -2,13 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Send, Bot, User as UserIcon } from 'lucide-react-native';
-import OpenAI from 'openai';
-
-// Initialize OpenAI (will use key from env or mock if missing)
-const openai = new OpenAI({
-    apiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY || 'mock_key',
-    dangerouslyAllowBrowser: true // required for React Native
-});
+import { openai } from '../lib/openai';
 
 interface Message {
     id: string;

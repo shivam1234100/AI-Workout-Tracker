@@ -1,31 +1,56 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useWorkoutStore } from '../store/workoutStore';
-import { Calendar, ChevronRight, Activity } from 'lucide-react-native';
+import { Calendar, ChevronRight, Activity, Trash2 } from 'lucide-react-native';
 
 export default function HistoryScreen({ navigation }: any) {
-    const { history } = useWorkoutStore();
+    const { history, deleteWorkout } = useWorkoutStore();
+
+    const handleDelete = (id: string) => {
+        Alert.alert(
+            "Delete Workout",
+            "Are you sure you want to delete this workout from your history?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: () => deleteWorkout(id)
+                }
+            ]
+        );
+    };
+
     const renderItem = ({ item }: any) => (
-        <TouchableOpacity
-            className="bg-white dark:bg-gray-800 p-4 rounded-xl mb-3 shadow-sm flex-row items-center active:bg-gray-50 dark:active:bg-gray-700"
-            onPress={() => navigation.navigate('WorkoutDetail', { workout: item })}
-        >
-            <View className="bg-purple-50 dark:bg-purple-900/30 p-3 rounded-lg mr-4">
-                <Calendar color="#7c3aed" size={24} />
-            </View>
-            <View className="flex-1">
-                <Text className="text-gray-900 dark:text-white font-bold text-lg">{item.name || 'Workout'}</Text>
-                <Text className="text-gray-500 dark:text-gray-400 text-sm">{new Date(item.endTime || Date.now()).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</Text>
-            </View>
-            <View className="items-end">
-                <Text className="text-gray-900 dark:text-white font-bold">{item.exercises?.length || 0} Exercises</Text>
-                <View className="flex-row items-center mt-1">
-                    <Text className="text-blue-600 dark:text-blue-400 text-xs font-bold">View Details</Text>
-                    <ChevronRight size={12} color="#2563eb" />
+        <View className="bg-white dark:bg-gray-800 p-4 rounded-xl mb-3 shadow-sm flex-row items-center">
+            <TouchableOpacity
+                className="flex-1 flex-row items-center cursor-pointer" // cursor-pointer for web feel if helpful
+                onPress={() => navigation.navigate('WorkoutDetail', { workout: item })}
+            >
+                <View className="bg-purple-50 dark:bg-purple-900/30 p-3 rounded-lg mr-4">
+                    <Calendar color="#7c3aed" size={24} />
                 </View>
-            </View>
-        </TouchableOpacity>
+                <View className="flex-1">
+                    <Text className="text-gray-900 dark:text-white font-bold text-lg">{item.name || 'Workout'}</Text>
+                    <Text className="text-gray-500 dark:text-gray-400 text-sm">{new Date(item.endTime || Date.now()).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</Text>
+                </View>
+                <View className="items-end mr-3">
+                    <Text className="text-gray-900 dark:text-white font-bold">{item.exercises?.length || 0} Exercises</Text>
+                    <View className="flex-row items-center mt-1">
+                        <Text className="text-blue-600 dark:text-blue-400 text-xs font-bold">View</Text>
+                        <ChevronRight size={12} color="#2563eb" />
+                    </View>
+                </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                className="p-2 -mr-2"
+                onPress={() => handleDelete(item.id)}
+            >
+                <Trash2 size={20} color="#ef4444" />
+            </TouchableOpacity>
+        </View>
     );
 
     return (

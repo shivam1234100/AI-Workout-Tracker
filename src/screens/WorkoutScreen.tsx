@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useWorkoutStore } from '../store/workoutStore';
-import { Plus, Trash2, Check, Clock, PlayCircle } from 'lucide-react-native';
+import { Plus, Trash2, Check, Clock, PlayCircle, X } from 'lucide-react-native';
 
 export default function WorkoutScreen({ navigation }: any) {
     const {
@@ -15,6 +15,8 @@ export default function WorkoutScreen({ navigation }: any) {
     } = useWorkoutStore();
 
     const [duration, setDuration] = useState(0);
+    const [isFinishModalVisible, setFinishModalVisible] = useState(false);
+    const [workoutName, setWorkoutName] = useState('');
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -37,20 +39,15 @@ export default function WorkoutScreen({ navigation }: any) {
         return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
     };
 
-    const handleFinish = () => {
-        Alert.alert(
-            "Finish Workout",
-            "Are you sure you want to finish this workout?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Finish", onPress: () => {
-                        finishWorkout();
-                        navigation.navigate('History');
-                    }
-                }
-            ]
-        );
+    const handleFinishPress = () => {
+        setWorkoutName(''); // Reset name
+        setFinishModalVisible(true);
+    };
+
+    const confirmFinish = () => {
+        finishWorkout(workoutName.trim() || undefined);
+        setFinishModalVisible(false);
+        navigation.navigate('History');
     };
 
     if (!activeWorkout) {
@@ -84,11 +81,52 @@ export default function WorkoutScreen({ navigation }: any) {
                 </View>
                 <TouchableOpacity
                     className="bg-green-500 px-4 py-2 rounded-lg"
-                    onPress={handleFinish}
+                    onPress={handleFinishPress}
                 >
                     <Text className="text-white font-bold">Finish</Text>
                 </TouchableOpacity>
             </View>
+
+            {/* Finish Workout Modal */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={isFinishModalVisible}
+                onRequestClose={() => setFinishModalVisible(false)}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    className="flex-1 justify-end"
+                >
+                    <View className="flex-1 bg-black/50 justify-end">
+                        <View className="bg-white dark:bg-gray-900 rounded-t-3xl p-6">
+                            <View className="flex-row justify-between items-center mb-6">
+                                <Text className="text-2xl font-bold text-gray-900 dark:text-white">Save Workout</Text>
+                                <TouchableOpacity onPress={() => setFinishModalVisible(false)}>
+                                    <X size={24} color="#6b7280" />
+                                </TouchableOpacity>
+                            </View>
+
+                            <Text className="text-gray-500 dark:text-gray-400 mb-2 font-medium">Workout Name (Optional)</Text>
+                            <TextInput
+                                className="bg-gray-100 dark:bg-gray-800 p-4 rounded-xl text-gray-900 dark:text-white text-lg mb-6 border border-gray-200 dark:border-gray-700"
+                                placeholder="e.g. Leg Day Destruction"
+                                placeholderTextColor="#9ca3af"
+                                value={workoutName}
+                                onChangeText={setWorkoutName}
+                                autoFocus
+                            />
+
+                            <TouchableOpacity
+                                className="bg-blue-600 py-4 rounded-xl items-center shadow-lg mb-4"
+                                onPress={confirmFinish}
+                            >
+                                <Text className="text-white font-bold text-lg">Save & Finish</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
 
             <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 100 }}>
                 {activeWorkout.exercises.length === 0 ? (

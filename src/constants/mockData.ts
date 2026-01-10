@@ -13,6 +13,7 @@ export const MOCK_EXERCISES = [
             "Lower the bar to your mid-chest",
             "Press the bar back up until your arms are straight"
         ],
+        videoUrl: 'https://www.youtube.com/watch?v=rT7DgCr-3pg',
         image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=2070&auto=format&fit=crop',
     },
     {
@@ -473,4 +474,56 @@ export const MOCK_STATS = {
 export const MOCK_RECENT_WORKOUTS = [
     { id: '101', name: 'Chest Day', date: '2026-01-08', exercises: 4 },
     { id: '102', name: 'Leg Day', date: '2026-01-05', exercises: 5 }
+];
+
+export const MOCK_QUOTES = [
+    { text: "The only bad workout is the one that didn't happen.", author: "Unknown" },
+    { text: "Fitness is not about being better than someone else. It’s about being better than you were yesterday.", author: "Khloe Kardashian" },
+    { text: "Motivation is what gets you started. Habit is what keeps you going.", author: "Jim Ryun" },
+    { text: "Your body can stand almost anything. It’s your mind that you have to convince.", author: "Unknown" },
+    { text: "Success starts with self-discipline.", author: "Unknown" },
+    { text: "Don't stop when you're tired. Stop when you're done.", author: "David Goggins" }
+];
+
+export const MOCK_ARTICLES = [
+    {
+        id: '1',
+        title: '5 Tips for Better Sleep Recovery',
+        category: 'Recovery',
+        readTime: '3 min',
+        image: 'https://images.unsplash.com/photo-1520206183501-b80df610434f?q=80&w=2070&auto=format&fit=crop',
+        url: 'https://www.sleepfoundation.org/physical-health/sleep-and-muscle-recovery'
+    },
+    {
+        id: '2',
+        title: 'Protein: How Much Do You Really Need?',
+        category: 'Nutrition',
+        readTime: '5 min',
+        image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=2053&auto=format&fit=crop',
+        url: 'https://www.healthline.com/nutrition/how-much-protein-per-day'
+    },
+    {
+        id: '3',
+        title: 'The Benefits of Stretching Daily',
+        category: 'Mobility',
+        readTime: '4 min',
+        image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=2070&auto=format&fit=crop',
+        url: 'https://www.healthline.com/health/benefits-of-stretching'
+    },
+    {
+        id: '4',
+        title: 'Hydration Hacks for Athletes',
+        category: 'Nutrition',
+        readTime: '3 min',
+        image: 'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?q=80&w=2070&auto=format&fit=crop',
+        url: 'https://www.healthline.com/nutrition/hydration-for-athletes'
+    },
+    {
+        id: '5',
+        title: 'The Power of Mindfulness in Training',
+        category: 'Wellness',
+        readTime: '6 min',
+        image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=2070&auto=format&fit=crop',
+        url: 'https://www.healthline.com/health/mind-body/mindfulness-exercises'
+    }
 ];

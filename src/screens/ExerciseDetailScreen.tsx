@@ -1,7 +1,6 @@
-import React from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, PlayCircle } from 'lucide-react-native';
+import { ArrowLeft, PlayCircle, Youtube } from 'lucide-react-native';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useColorScheme } from 'nativewind';
 
@@ -9,6 +8,23 @@ export default function ExerciseDetailScreen({ route, navigation }: any) {
     const { exercise } = route.params;
     const { activeWorkout, startWorkout, addExercise } = useWorkoutStore();
     const { colorScheme } = useColorScheme();
+
+    const openVideoTutorial = async () => {
+        // Use explicit videoUrl if available, otherwise search YouTube
+        const query = encodeURIComponent(`${exercise.name} exercise form tutorial`);
+        const url = exercise.videoUrl || `https://www.youtube.com/results?search_query=${query}`;
+
+        try {
+            const supported = await Linking.canOpenURL(url);
+            if (supported) {
+                await Linking.openURL(url);
+            } else {
+                await Linking.openURL(url); // Try opening anyway (browsers usually handle it)
+            }
+        } catch (error) {
+            Alert.alert("Error", "Could not open video tutorial.");
+        }
+    };
 
     const handleAddToWorkout = () => {
         if (!activeWorkout) {
@@ -20,8 +36,6 @@ export default function ExerciseDetailScreen({ route, navigation }: any) {
                     {
                         text: "Start & Add", onPress: () => {
                             startWorkout();
-                            // Need a small timeout or improved store logic to ensure sync, 
-                            // but Zustand is sync usually.
                             addExercise(exercise);
                             navigation.navigate('Main', { screen: 'Workout' });
                         }
@@ -30,7 +44,6 @@ export default function ExerciseDetailScreen({ route, navigation }: any) {
             );
         } else {
             addExercise(exercise);
-            // Navigate to the Main tab navigator, then to the Workout screen specifically
             navigation.navigate('Main', { screen: 'Workout' });
         }
     };
@@ -68,6 +81,15 @@ export default function ExerciseDetailScreen({ route, navigation }: any) {
                                 }`}>{exercise.difficulty}</Text>
                         </View>
                     </View>
+
+                    {/* Tutorial Button */}
+                    <TouchableOpacity
+                        className="flex-row items-center bg-red-600/10 dark:bg-red-900/20 p-3 rounded-xl mt-4 mb-2 self-start"
+                        onPress={openVideoTutorial}
+                    >
+                        <Youtube size={20} color="#dc2626" className="mr-2" />
+                        <Text className="text-red-600 dark:text-red-400 font-semibold">Watch Tutorial</Text>
+                    </TouchableOpacity>
 
                     <View className="h-[1px] bg-gray-100 dark:bg-gray-800 my-6" />
 
