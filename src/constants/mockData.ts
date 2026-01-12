@@ -14,7 +14,7 @@ export const MOCK_EXERCISES = [
             "Press the bar back up until your arms are straight"
         ],
         videoUrl: 'https://www.youtube.com/watch?v=rT7DgCr-3pg',
-        image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '2',
@@ -87,7 +87,7 @@ export const MOCK_EXERCISES = [
             "Lift your chest up and straighten your lower back",
             "Take a big breath, hold it, and stand up with the weight"
         ],
-        image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2070&auto=format&fit=crop'
+        image: 'https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=2082&auto=format&fit=crop'
     },
     {
         _id: '7',
@@ -101,7 +101,7 @@ export const MOCK_EXERCISES = [
             "Pull yourself up until chin clears bar",
             "Lower back down with control"
         ],
-        image: 'https://images.unsplash.com/photo-1598971639058-211a73287138?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '8',
@@ -143,7 +143,7 @@ export const MOCK_EXERCISES = [
             "Keep back flat",
             "Lower weight fully"
         ],
-        image: 'https://images.unsplash.com/photo-1574680096141-1cddd32e0340?q=80&w=2069&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1550345332-09e3ac987658?q=80&w=1974&auto=format&fit=crop',
     },
 
     // --- LEGS ---
@@ -160,7 +160,7 @@ export const MOCK_EXERCISES = [
             "Keep your chest up and back straight",
             "Push through your heels to return to standing"
         ],
-        image: 'https://images.unsplash.com/photo-1574680096141-1cddd32e0340?q=80&w=2069&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '12',
@@ -216,7 +216,7 @@ export const MOCK_EXERCISES = [
             "Squeeze quads at top",
             "Lower slowly"
         ],
-        image: 'https://images.unsplash.com/photo-1574680096141-1cddd32e0340?q=80&w=2069&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?q=80&w=2069&auto=format&fit=crop',
     },
     {
         _id: '16',
@@ -260,7 +260,7 @@ export const MOCK_EXERCISES = [
             "Keep slight bend in elbows",
             "Lower slowly"
         ],
-        image: 'https://images.unsplash.com/photo-1574680096141-1cddd32e0340?q=80&w=2069&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=2069&auto=format&fit=crop',
     },
     {
         _id: '19',
@@ -318,7 +318,7 @@ export const MOCK_EXERCISES = [
             "Keep elbows tucked",
             "Lower with control"
         ],
-        image: 'https://images.unsplash.com/photo-1574680096141-1cddd32e0340?q=80&w=2069&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1576678927484-cc907957088c?q=80&w=2069&auto=format&fit=crop',
     },
     {
         _id: '23',
@@ -360,7 +360,7 @@ export const MOCK_EXERCISES = [
             "Press back up to straight arms",
             "Keep torso upright for triceps"
         ],
-        image: 'https://images.unsplash.com/photo-1598971639058-211a73287138?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2070&auto=format&fit=crop',
     },
 
     // --- CORE ---
@@ -405,7 +405,7 @@ export const MOCK_EXERCISES = [
             "Example power to drive bar overhead (jerk)",
             "Lock arms out and stand tall"
         ],
-        image: 'https://images.unsplash.com/photo-1517963879466-e1b54f39ae05?q=80&w=2069&auto=format&fit=crop'
+        image: 'https://images.unsplash.com/photo-1522898467493-49726bf28798?q=80&w=2070&auto=format&fit=crop'
     },
     {
         _id: '102',
@@ -461,7 +461,7 @@ export const MOCK_EXERCISES = [
             "Keep extended leg off ground",
             "Push back up to standing"
         ],
-        image: 'https://images.unsplash.com/photo-1574680096141-1cddd32e0340?q=80&w=2069&auto=format&fit=crop'
+        image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=2069&auto=format&fit=crop'
     }
 ];
 
@@ -491,7 +491,7 @@ export const MOCK_ARTICLES = [
         title: '5 Tips for Better Sleep Recovery',
         category: 'Recovery',
         readTime: '3 min',
-        image: 'https://images.unsplash.com/photo-1520206183501-b80df610434f?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1541480601022-2308c0f9c4b0?q=80&w=2070&auto=format&fit=crop',
         url: 'https://www.sleepfoundation.org/physical-health/sleep-and-muscle-recovery'
     },
     {

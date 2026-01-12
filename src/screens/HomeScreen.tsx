@@ -1,15 +1,15 @@
 import React, { useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Linking, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useContentStore } from '../store/contentStore';
-import { Play, TrendingUp, Calendar, Activity, User, Dumbbell, ChevronRight, PlayCircle, Quote, BookOpen } from 'lucide-react-native';
+import { Play, TrendingUp, Calendar, Activity, User, Dumbbell, ChevronRight, PlayCircle, Quote } from 'lucide-react-native';
 
 export default function HomeScreen({ navigation }: any) {
     const { user } = useAuthStore();
     const { history } = useWorkoutStore();
-    const { dailyQuote, articles, isLoading, fetchContent } = useContentStore();
+    const { dailyQuote, isLoading, fetchContent } = useContentStore();
 
     useEffect(() => {
         // Initial fetch (respects 24h cache)
@@ -124,42 +124,7 @@ export default function HomeScreen({ navigation }: any) {
                         )}
                     </View>
 
-                    {/* Recommended Reads */}
-                    <View className="flex-row items-center mb-4">
-                        <BookOpen color="#10b981" size={20} className="mr-2" />
-                        <Text className="text-xl font-bold text-gray-900 dark:text-white">Recommended Reads</Text>
-                    </View>
 
-                    <View>
-                        {articles.length > 0 ? (
-                            <FlatList
-                                data={articles}
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                keyExtractor={(item) => item.id}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        className="mr-4 w-60 bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden"
-                                        onPress={() => Linking.openURL(item.url)}
-                                    >
-                                        <Image
-                                            source={{ uri: item.image }}
-                                            className="w-full h-32 bg-gray-200"
-                                        />
-                                        <View className="p-4">
-                                            <View className="bg-blue-100 dark:bg-blue-900/30 self-start px-2 py-1 rounded-md mb-2">
-                                                <Text className="text-blue-700 dark:text-blue-400 text-xs font-bold uppercase">{item.category}</Text>
-                                            </View>
-                                            <Text className="text-gray-900 dark:text-white font-bold text-base mb-1 leading-5" numberOfLines={2}>{item.title}</Text>
-                                            <Text className="text-gray-500 dark:text-gray-400 text-xs">{item.readTime} read</Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                )}
-                            />
-                        ) : (
-                            <Text className="text-gray-400">Loading articles...</Text>
-                        )}
-                    </View>
                 </View>
             </ScrollView>
         </SafeAreaView>

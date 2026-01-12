@@ -25,13 +25,29 @@ export default function AIScreen() {
 
     const generateOfflineResponse = (query: string): string => {
         const lowerQuery = query.toLowerCase();
-        if (lowerQuery.includes('chest') || lowerQuery.includes('bench')) return "For chest development, focusing on Bench Press, Incline Dumbbell Press, and Chest Flyes is effective. Aim for 3-4 sets of 8-12 reps.";
-        if (lowerQuery.includes('back') || lowerQuery.includes('pull')) return "Great back exercises include Pull-ups, Barbell Rows, and Lat Pulldowns. Focus on squeezing your shoulder blades together.";
-        if (lowerQuery.includes('leg') || lowerQuery.includes('squat')) return "Never skip leg day! Squats, Lunges, and Romanian Deadlifts are foundational. Ensure good form to prevent injury.";
-        if (lowerQuery.includes('arm') || lowerQuery.includes('bicep') || lowerQuery.includes('tricep')) return "For arms, try supersetting Bicep Curls with Tricep Dips. It pumps blood into the muscles efficiently.";
-        if (lowerQuery.includes('diet') || lowerQuery.includes('food') || lowerQuery.includes('eat')) return "Nutrition is key! Prioritize protein intake (1.6g-2.2g per kg of bodyweight), stay hydrated, and eat plenty of vegetables.";
-        if (lowerQuery.includes('weight loss') || lowerQuery.includes('fat')) return "To lose weight, maintain a slight caloric deficit and combine resistance training with cardio. consistency is more important than intensity.";
-        return "That's a great question! While my direct connection to the advanced AI cloud is currently limited (Rate Limit/Quota), I recommend focusing on progressive overload: gradually increasing the weight or reps each week. Consistency is the secret to results!";
+
+        // Muscle Groups & Exercises
+        if (lowerQuery.includes('chest') || lowerQuery.includes('bench') || lowerQuery.includes('push up')) return "For chest development, focusing on Bench Press, Incline Dumbbell Press, and Chest Flyes is effective. Aim for 3-4 sets of 8-12 reps.";
+        if (lowerQuery.includes('back') || lowerQuery.includes('pull') || lowerQuery.includes('row')) return "Great back exercises include Pull-ups, Barbell Rows, and Lat Pulldowns. Focus on squeezing your shoulder blades together at the peak of the movement.";
+        if (lowerQuery.includes('leg') || lowerQuery.includes('squat') || lowerQuery.includes('lunge')) return "Never skip leg day! Squats, Lunges, and Romanian Deadlifts are foundational. Ensure good form to prevent injury and drive through your heels.";
+        if (lowerQuery.includes('arm') || lowerQuery.includes('bicep') || lowerQuery.includes('tricep')) return "For arms, try supersetting Bicep Curls with Tricep Dips/Extensions. This keeps the intensity high and pumps blood into the muscles efficiently.";
+        if (lowerQuery.includes('shoulder') || lowerQuery.includes('delts') || lowerQuery.includes('overhead')) return "To build 3D shoulders, target all three heads: Overhead Press for mass, Lateral Raises for width, and Face Pulls for rear delts.";
+        if (lowerQuery.includes('abs') || lowerQuery.includes('core') || lowerQuery.includes('plank')) return "Abs are revealed in the kitchen but built in the gym. Planks, Hanging Leg Raises, and Cable Crunches are superior to standard sit-ups.";
+
+        // Nutrition & Diet
+        if (lowerQuery.includes('diet') || lowerQuery.includes('food') || lowerQuery.includes('eat') || lowerQuery.includes('nutrition')) return "Nutrition is key! Prioritize protein intake (1.6g-2.2g per kg of bodyweight), stick to whole foods, and stay hydrated.";
+        if (lowerQuery.includes('protein') || lowerQuery.includes('shake') || lowerQuery.includes('supplement')) return "Protein is essential for muscle repair. Whey protein is great post-workout for quick absorption, while Casein is good before bed. Food sources like chicken, eggs, and fish are always best.";
+        if (lowerQuery.includes('weight loss') || lowerQuery.includes('fat') || lowerQuery.includes('lose weight')) return "To lose weight, you need a caloric deficit. Combine resistance training to keep muscle with steady-state cardio or HIIT to burn calories. Consistency > Intensity.";
+        if (lowerQuery.includes('bulk') || lowerQuery.includes('gain') || lowerQuery.includes('muscle')) return "To gain muscle, eat in a slight caloric surplus (250-500 kcal above maintenance). Lift heavy, focus on compound movements, and sleep 7-9 hours.";
+
+        // Training Principles
+        if (lowerQuery.includes('cardio') || lowerQuery.includes('run') || lowerQuery.includes('stamina')) return "Cardio is great for heart health. For fat loss, try HIIT (High Intensity Interval Training) for 20 mins. For endurance, steady-state running or cycling for 45+ mins is best.";
+        if (lowerQuery.includes('rep') || lowerQuery.includes('set') || lowerQuery.includes('how many')) return "For hypertrophy (muscle growth), aim for 3-4 sets of 8-12 reps. For strength, 3-5 sets of 1-5 reps. For endurance, 2-3 sets of 15+ reps.";
+        if (lowerQuery.includes('rest') || lowerQuery.includes('recover') || lowerQuery.includes('sleep')) return "Muscles grow while you rest, not while you train. Aim for 7-9 hours of sleep and take at least 1-2 rest days per week to prevent burnout.";
+        if (lowerQuery.includes('pain') || lowerQuery.includes('hurt') || lowerQuery.includes('injury')) return "If you feel sharp pain, STOP immediately. soreness is normal, but sharp pain signals injury. Rest the area, ice if needed, and consult a professional if it persists.";
+
+        // General fallback
+        return "That's a great question! Since I'm currently in 'Offline Mode' due to high server traffic, I recommend sticking to the basics: Progressive Overload (add weight/reps weekly), Consistency, and Good Form. If you have a specific question about an exercise or diet, try asking with those keywords!";
     };
 
     const sendMessage = async () => {

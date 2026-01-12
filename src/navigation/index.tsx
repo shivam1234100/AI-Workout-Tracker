@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { Home, Dumbbell, PlayCircle, History, BrainCircuit, User } from 'lucide-react-native';
+import { useAuthStore } from '../store/authStore';
 
 
 import LoginScreen from '../screens/LoginScreen';
@@ -93,8 +94,6 @@ function AuthStack() {
         </Stack.Navigator>
     );
 }
-
-import { useAuthStore } from '../store/authStore';
 
 export default function RootNavigator() {
     const { isAuthenticated } = useAuthStore();

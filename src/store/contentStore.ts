@@ -64,7 +64,7 @@ export const useContentStore = create<ContentState>()(
             }
         }),
         {
-            name: 'content-storage-v3',
+            name: 'content-storage-v6',
             storage: createJSONStorage(() => AsyncStorage),
         }
     )
