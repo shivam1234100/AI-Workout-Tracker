@@ -6,6 +6,20 @@ import { ArrowLeft, Calendar, Clock, Dumbbell } from 'lucide-react-native';
 export default function WorkoutDetailScreen({ route, navigation }: any) {
     const { workout } = route.params;
 
+    // Helper to safely get sets as an array
+    const getSets = (sets: any) => {
+        if (!sets) return [];
+        if (Array.isArray(sets)) return sets;
+        if (typeof sets === 'string') {
+            try {
+                return JSON.parse(sets);
+            } catch {
+                return [];
+            }
+        }
+        return [];
+    };
+
     if (!workout) {
         return (
             <SafeAreaView className="flex-1 bg-white justify-center items-center">
@@ -16,6 +30,7 @@ export default function WorkoutDetailScreen({ route, navigation }: any) {
             </SafeAreaView>
         );
     }
+
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString(undefined, {
@@ -76,7 +91,7 @@ export default function WorkoutDetailScreen({ route, navigation }: any) {
                             <Text className="flex-1 text-gray-400 text-xs font-bold uppercase text-center">Reps</Text>
                         </View>
 
-                        {exercise.sets?.map((set: any, setIndex: number) => (
+                        {getSets(exercise.sets).map((set: any, setIndex: number) => (
                             <View key={set.id || setIndex} className="flex-row items-center py-2">
                                 <View className="w-10 items-center justify-center">
                                     <View className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 items-center justify-center">

@@ -103,7 +103,7 @@ export default function HomeScreen({ navigation }: any) {
                             <TouchableOpacity
                                 key={workout.id}
                                 className="bg-white dark:bg-gray-800 p-4 rounded-xl mb-3 shadow-sm flex-row items-center"
-                                onPress={() => navigation.navigate('History', { screen: 'WorkoutDetail', params: { workout } })}
+                                onPress={() => navigation.navigate('WorkoutDetail', { workout })}
                             >
                                 <View className="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-xl mr-4">
                                     <PlayCircle color="#2563eb" size={24} />

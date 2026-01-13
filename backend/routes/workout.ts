@@ -51,7 +51,16 @@ router.post('/', authenticateToken, async (req: any, res) => {
             include: { exercises: true }
         });
 
-        res.json(workout);
+        // Parse sets JSON before sending response
+        const formattedWorkout = {
+            ...workout,
+            exercises: workout.exercises.map(e => ({
+                ...e,
+                sets: JSON.parse(e.sets)
+            }))
+        };
+
+        res.json(formattedWorkout);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error saving workout', details: error });

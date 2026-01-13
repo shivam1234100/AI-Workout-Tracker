@@ -44,8 +44,8 @@ export default function WorkoutScreen({ navigation }: any) {
         setFinishModalVisible(true);
     };
 
-    const confirmFinish = () => {
-        finishWorkout(workoutName.trim() || undefined);
+    const confirmFinish = async () => {
+        await finishWorkout(workoutName.trim() || undefined);
         setFinishModalVisible(false);
         navigation.navigate('History');
     };
