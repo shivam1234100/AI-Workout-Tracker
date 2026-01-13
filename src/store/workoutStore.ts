@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '../constants/api';
+import { useAuthStore } from './authStore';
 
 export interface Set {
     id: string;
@@ -22,15 +24,16 @@ export interface WorkoutState {
         exercises: WorkoutExercise[];
     } | null;
 
-    history: any[]; // Using any[] for now to match structure, refining later if needed
+    history: any[];
 
     startWorkout: () => void;
-    finishWorkout: (name?: string) => void;
+    finishWorkout: (name?: string) => Promise<void>;
+    fetchHistory: () => Promise<void>;
     addExercise: (exercise: any) => void;
     addSet: (exerciseIndex: number) => void;
     updateSet: (exerciseIndex: number, setIndex: number, field: keyof Set, value: any) => void;
     removeSet: (exerciseIndex: number, setIndex: number) => void;
-    deleteWorkout: (id: string) => void;
+    deleteWorkout: (id: string) => Promise<void>;
 }
 
 export const useWorkoutStore = create<WorkoutState>()(
@@ -46,26 +49,91 @@ export const useWorkoutStore = create<WorkoutState>()(
                 }
             }),
 
-            finishWorkout: (name) => {
-                const { activeWorkout, history } = get();
-                if (activeWorkout) {
-                    const completedWorkout = {
-                        ...activeWorkout,
-                        id: Math.random().toString(),
-                        endTime: Date.now(),
-                        date: new Date().toISOString(),
-                        name: name || `Workout ${new Date().toLocaleDateString()}`
-                    };
-                    set({
-                        activeWorkout: null,
-                        history: [completedWorkout, ...history]
+            fetchHistory: async () => {
+                const token = useAuthStore.getState().token;
+                if (!token) return;
+
+                try {
+                    const response = await fetch(`${API_URL}/workouts`, {
+                        headers: { Authorization: `Bearer ${token}` }
                     });
+                    if (response.ok) {
+                        const data = await response.json();
+                        set({ history: data });
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch history:", error);
                 }
             },
 
-            deleteWorkout: (id) => set((state) => ({
-                history: state.history.filter(w => w.id !== id)
-            })),
+            finishWorkout: async (name) => {
+                const { activeWorkout } = get();
+                const token = useAuthStore.getState().token;
+
+                if (activeWorkout) {
+                    const workoutData = {
+                        name: name || `Workout ${new Date().toLocaleDateString()}`,
+                        startTime: activeWorkout.startTime,
+                        endTime: Date.now(),
+                        exercises: activeWorkout.exercises
+                    };
+
+                    if (token) {
+                        try {
+                            const response = await fetch(`${API_URL}/workouts`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    Authorization: `Bearer ${token}`
+                                },
+                                body: JSON.stringify(workoutData)
+                            });
+
+                            if (response.ok) {
+                                const savedWorkout = await response.json();
+                                set((state) => ({
+                                    activeWorkout: null,
+                                    history: [savedWorkout, ...state.history]
+                                }));
+                            } else {
+                                // Fallback to local if offline or error, ideally queue for sync
+                                console.error("Failed to save workout to backend");
+                            }
+                        } catch (error) {
+                            console.error("Error saving workout:", error);
+                        }
+                    } else {
+                        // Local fallback (legacy behavior)
+                        const completedWorkout = {
+                            ...workoutData,
+                            id: Math.random().toString(),
+                            date: new Date().toISOString(),
+                        };
+                        set((state) => ({
+                            activeWorkout: null,
+                            history: [completedWorkout, ...state.history]
+                        }));
+                    }
+                }
+            },
+
+            deleteWorkout: async (id) => {
+                const token = useAuthStore.getState().token;
+                if (token) {
+                    try {
+                        await fetch(`${API_URL}/workouts/${id}`, {
+                            method: 'DELETE',
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                    } catch (error) {
+                        console.error("Error deleting workout:", error);
+                    }
+                }
+
+                set((state) => ({
+                    history: state.history.filter(w => w.id !== id)
+                }));
+            },
 
             addExercise: (exercise) => set((state) => {
                 if (!state.activeWorkout) return state;

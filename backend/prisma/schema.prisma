@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  workouts  Workout[]
+}
+
+model Workout {
+  id        String     @id @default(uuid())
+  name      String
+  date      DateTime
+  startTime DateTime?
+  endTime   DateTime?
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  exercises Exercise[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Exercise {
+  id        String   @id @default(uuid())
+  name      String
+  workoutId String
+  workout   Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  sets      String   // Storing sets as JSON string for simplicity in SQLite
+}
