@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/authStore';
 
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ExercisesScreen from '../screens/ExercisesScreen';
 import WorkoutScreen from '../screens/WorkoutScreen';
@@ -91,6 +92,7 @@ function AuthStack() {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         </Stack.Navigator>
     );
 }

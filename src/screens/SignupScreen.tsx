@@ -6,21 +6,26 @@ import { useAuthStore } from '../store/authStore';
 export default function SignupScreen({ navigation }: any) {
     const { signUp } = useAuthStore();
 
+    const [firstName, setFirstName] = useState('');
     const [emailAddress, setEmailAddress] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
     const onSignUpPress = async () => {
-        if (!emailAddress || !password) {
+        if (!firstName || !emailAddress || !password) {
             Alert.alert("Error", "Please fill in all fields");
+            return;
+        }
+        if (password.length < 6) {
+            Alert.alert("Error", "Password must be at least 6 characters");
             return;
         }
         setLoading(true);
         try {
-            await signUp(emailAddress, password);
+            await signUp(emailAddress, password, firstName);
             // Navigation handled by RootNavigator state change
         } catch (err: any) {
-            Alert.alert("Error", "Message failed");
+            Alert.alert("Error", err.message || "Signup failed");
         } finally {
             setLoading(false);
         }
@@ -32,9 +37,21 @@ export default function SignupScreen({ navigation }: any) {
 
             <View className="space-y-4">
                 <View>
+                    <Text className="mb-2 text-gray-600 font-medium">First Name</Text>
+                    <TextInput
+                        autoCapitalize="words"
+                        value={firstName}
+                        placeholder="Enter your first name..."
+                        onChangeText={setFirstName}
+                        className="w-full border border-gray-300 rounded-xl p-4 bg-gray-50 text-gray-900"
+                    />
+                </View>
+
+                <View>
                     <Text className="mb-2 text-gray-600 font-medium">Email</Text>
                     <TextInput
                         autoCapitalize="none"
+                        keyboardType="email-address"
                         value={emailAddress}
                         placeholder="Enter email..."
                         onChangeText={setEmailAddress}
@@ -46,7 +63,7 @@ export default function SignupScreen({ navigation }: any) {
                     <Text className="mb-2 text-gray-600 font-medium">Password</Text>
                     <TextInput
                         value={password}
-                        placeholder="Enter password..."
+                        placeholder="Enter password (min 6 characters)..."
                         secureTextEntry={true}
                         onChangeText={setPassword}
                         className="w-full border border-gray-300 rounded-xl p-4 bg-gray-50 text-gray-900"

@@ -12,17 +12,19 @@ export default function ExerciseDetailScreen({ route, navigation }: any) {
     const openVideoTutorial = async () => {
         // Use explicit videoUrl if available, otherwise search YouTube
         const query = encodeURIComponent(`${exercise.name} exercise form tutorial`);
-        const url = exercise.videoUrl || `https://www.youtube.com/results?search_query=${query}`;
+        const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${query}`;
+        const url = exercise.videoUrl || youtubeSearchUrl;
 
         try {
-            const supported = await Linking.canOpenURL(url);
-            if (supported) {
-                await Linking.openURL(url);
-            } else {
-                await Linking.openURL(url); // Try opening anyway (browsers usually handle it)
-            }
+            // Directly try to open URL - canOpenURL is unreliable on iOS for http/https
+            await Linking.openURL(url);
         } catch (error) {
-            Alert.alert("Error", "Could not open video tutorial.");
+            // If opening direct URL fails, try YouTube search as fallback
+            try {
+                await Linking.openURL(youtubeSearchUrl);
+            } catch (fallbackError) {
+                Alert.alert("Error", "Could not open video tutorial. Please search YouTube manually.");
+            }
         }
     };
 

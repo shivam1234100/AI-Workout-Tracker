@@ -15,7 +15,7 @@ interface AuthState {
     token: string | null;
     isAuthenticated: boolean;
     signIn: (email: string, password: string) => Promise<void>;
-    signUp: (email: string, password: string) => Promise<void>;
+    signUp: (email: string, password: string, firstName: string) => Promise<void>;
     signOut: () => void;
 }
 
@@ -48,12 +48,12 @@ export const useAuthStore = create<AuthState>()(
                     throw error;
                 }
             },
-            signUp: async (email, password) => {
+            signUp: async (email, password, firstName) => {
                 try {
                     const response = await fetch(`${API_URL}/auth/register`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, password, name: email.split('@')[0] }),
+                        body: JSON.stringify({ email, password, name: firstName }),
                     });
                     const data = await response.json();
 

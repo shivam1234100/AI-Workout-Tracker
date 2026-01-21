@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MOCK_EXERCISES } from '../constants/mockData';
 import { Search, ChevronRight, Filter } from 'lucide-react-native';
@@ -35,9 +36,13 @@ export default function ExercisesScreen({ navigation }: any) {
         >
             <Image
                 source={{ uri: item.image }}
-                className="w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 mr-4"
+                style={{ width: 64, height: 64, borderRadius: 8 }}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+                placeholder={{ blurhash: 'LKO2?V%2Tw=w]~RBVZRi};RPxuwH' }}
             />
-            <View className="flex-1">
+            <View className="flex-1 ml-4">
                 <Text className="text-gray-900 dark:text-white font-bold text-lg">{item.name}</Text>
                 <Text className="text-gray-500 dark:text-gray-400 text-sm">
                     {item.muscleGroup} • <Text className={`font-bold ${getDifficultyColor(item.difficulty)}`}>{item.difficulty}</Text>

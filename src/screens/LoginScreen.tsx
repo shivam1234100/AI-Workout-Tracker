@@ -2,6 +2,7 @@ import { useAuthStore } from '../store/authStore';
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
 export default function LoginScreen({ navigation }: any) {
     const { signIn } = useAuthStore();
 
@@ -19,7 +20,14 @@ export default function LoginScreen({ navigation }: any) {
             await signIn(emailAddress, password);
             // Navigation handled by RootNavigator state change
         } catch (err: any) {
-            Alert.alert("Error", "Login failed");
+            // Check for specific error messages from the backend
+            if (err.message === 'Wrong password') {
+                Alert.alert("Wrong Password", "The password you entered is incorrect. Please try again.");
+            } else if (err.message === 'User not found') {
+                Alert.alert("User Not Found", "No account exists with this email address.");
+            } else {
+                Alert.alert("Login Failed", err.message || "An error occurred during login.");
+            }
         } finally {
             setLoading(false);
         }
@@ -34,6 +42,7 @@ export default function LoginScreen({ navigation }: any) {
                     <Text className="mb-2 text-gray-600 font-medium">Email</Text>
                     <TextInput
                         autoCapitalize="none"
+                        keyboardType="email-address"
                         value={emailAddress}
                         placeholder="Enter email..."
                         onChangeText={setEmailAddress}
@@ -53,7 +62,14 @@ export default function LoginScreen({ navigation }: any) {
                 </View>
 
                 <TouchableOpacity
-                    className="bg-blue-600 w-full py-4 rounded-xl items-center mt-6"
+                    onPress={() => navigation.navigate('ForgotPassword')}
+                    className="items-end mt-2"
+                >
+                    <Text className="text-blue-600 font-medium">Forgot Password?</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    className="bg-blue-600 w-full py-4 rounded-xl items-center mt-4"
                     onPress={onSignInPress}
                     disabled={loading}
                 >
