@@ -17,6 +17,7 @@ import AIScreen from '../screens/AIScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ExerciseDetailScreen from '../screens/ExerciseDetailScreen';
 import WorkoutDetailScreen from '../screens/WorkoutDetailScreen';
+import WeeklySummaryScreen from '../screens/WeeklySummaryScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -107,6 +108,7 @@ export default function RootNavigator() {
                     <Stack.Screen name="Main" component={MainTabs} />
                     <Stack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} />
                     <Stack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
+                    <Stack.Screen name="WeeklySummary" component={WeeklySummaryScreen} />
                 </>
             ) : (
                 <Stack.Screen name="Auth" component={AuthStack} />

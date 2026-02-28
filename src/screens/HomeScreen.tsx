@@ -96,6 +96,26 @@ export default function HomeScreen({ navigation }: any) {
                         </View>
                     </View>
 
+                    {/* Weekly Insights Card */}
+                    <TouchableOpacity
+                        className="bg-emerald-600 rounded-2xl p-5 mb-8 shadow-lg relative overflow-hidden"
+                        onPress={() => navigation.navigate('WeeklySummary')}
+                        activeOpacity={0.8}
+                    >
+                        <View className="absolute -right-4 -top-4 w-20 h-20 bg-emerald-500/30 rounded-full" />
+                        <View className="absolute -left-3 -bottom-3 w-16 h-16 bg-emerald-500/30 rounded-full" />
+                        <View className="flex-row items-center justify-between">
+                            <View className="flex-1">
+                                <Text className="text-emerald-100 font-bold uppercase text-xs tracking-wider mb-1">📊 Weekly Insights</Text>
+                                <Text className="text-white text-lg font-bold">View Your Training Summary</Text>
+                                <Text className="text-emerald-200 text-sm mt-1">AI-powered analysis of your week</Text>
+                            </View>
+                            <View className="bg-emerald-500/40 p-3 rounded-xl">
+                                <TrendingUp color="white" size={24} />
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+
                     {/* Recent Activity */}
                     <Text className="text-xl font-bold text-gray-900 dark:text-white mb-4">Recent Activity</Text>
                     <View className="mb-8">

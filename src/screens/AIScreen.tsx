@@ -1,154 +1,317 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Send, Bot, User as UserIcon } from 'lucide-react-native';
-import { openai } from '../lib/openai';
+import { Send, Bot, User as UserIcon, ArrowLeft } from 'lucide-react-native';
+import { API_URL } from '../constants/api';
+import { useAuthStore } from '../store/authStore';
+import { useWorkoutStore } from '../store/workoutStore';
+import ChatHistorySidebar from '../components/ChatHistorySidebar';
 
 interface Message {
     id: string;
     role: 'user' | 'assistant';
     content: string;
+    createdAt?: string;
 }
 
+interface Conversation {
+    id: string;
+    title: string;
+    preview: string;
+    date: string;
+    messages: Message[];
+}
+
+// ─── Offline fallback ───
+function generateOfflineResponse(query: string, workoutHistory: any[]): string {
+    const lq = query.toLowerCase();
+    let ctx = '';
+    if (workoutHistory.length > 0) {
+        const last = workoutHistory[0];
+        const names = last.exercises?.map((e: any) => e.name).join(', ') || 'exercises';
+        const days = Math.floor((Date.now() - new Date(last.endTime || last.date).getTime()) / 86400000);
+        ctx = ` Your last workout was ${days}d ago (${names}).`;
+    }
+    if (lq.includes('chest') || lq.includes('bench')) return `Bench Press, Incline DB Press, Flyes — 3-4×8-12.${ctx}`;
+    if (lq.includes('back') || lq.includes('pull')) return `Pull-ups, Rows, Lat Pulldowns. Squeeze shoulder blades!${ctx}`;
+    if (lq.includes('leg') || lq.includes('squat')) return `Squats, Lunges, RDLs. Drive through heels.${ctx}`;
+    if (lq.includes('shoulder')) return `OHP for mass, Lateral Raises for width, Face Pulls for rear.${ctx}`;
+    if (lq.includes('arm') || lq.includes('bicep')) return `Superset Curls with Tricep Extensions.${ctx}`;
+    if (lq.includes('today') || lq.includes('what should')) return `Try adding 2.5kg or 1-2 extra reps to your main lifts.${ctx}`;
+    return `Focus on progressive overload, consistency, and form!${ctx}`;
+}
+
+// ─── Group messages into conversations (30-min gap = new convo) ───
+function groupIntoConversations(messages: Message[]): Conversation[] {
+    if (messages.length === 0) return [];
+    const convos: Conversation[] = [];
+    let cur: Message[] = [messages[0]];
+
+    for (let i = 1; i < messages.length; i++) {
+        const prevT = messages[i - 1].createdAt ? new Date(messages[i - 1].createdAt!).getTime() : 0;
+        const curT = messages[i].createdAt ? new Date(messages[i].createdAt!).getTime() : 0;
+        if (curT - prevT > 30 * 60 * 1000) {
+            convos.push(buildConvo(cur));
+            cur = [messages[i]];
+        } else {
+            cur.push(messages[i]);
+        }
+    }
+    if (cur.length > 0) convos.push(buildConvo(cur));
+    return convos.reverse();
+}
+
+function buildConvo(msgs: Message[]): Conversation {
+    const firstUser = msgs.find(m => m.role === 'user');
+    const title = firstUser
+        ? firstUser.content.length > 40 ? firstUser.content.substring(0, 40) + '...' : firstUser.content
+        : 'New conversation';
+    const last = msgs[msgs.length - 1];
+    const preview = last.role === 'assistant'
+        ? (last.content.length > 60 ? last.content.substring(0, 60) + '...' : last.content) : '';
+    const date = msgs[0].createdAt ? formatRelDate(new Date(msgs[0].createdAt)) : 'Today';
+    return { id: msgs[0].id, title, preview, date, messages: msgs };
+}
+
+function formatRelDate(d: Date): string {
+    const diff = Math.floor((Date.now() - d.getTime()) / 86400000);
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Yesterday';
+    if (diff < 7) return d.toLocaleDateString(undefined, { weekday: 'long' });
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+// ═══════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════
 export default function AIScreen() {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: '1',
-            role: 'assistant',
-            content: 'Hello! I am your AI Workout Assistant. How can I help you reach your fitness goals today?'
-        }
-    ]);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+    const [allMessages, setAllMessages] = useState<Message[]>([]);
+    const [activeMessages, setActiveMessages] = useState<Message[]>([]);
+    const [activeConvoId, setActiveConvoId] = useState<string | null>(null);
+    const [activeConvoTitle, setActiveConvoTitle] = useState('New Chat');
+    const [showSidebar, setShowSidebar] = useState(true); // mobile: toggle list/chat
 
-    const scrollViewRef = useRef<ScrollView>(null);
+    const scrollRef = useRef<ScrollView>(null);
+    const { token } = useAuthStore();
+    const { history: workoutHistory } = useWorkoutStore();
 
-    const generateOfflineResponse = (query: string): string => {
-        const lowerQuery = query.toLowerCase();
+    // Responsive: sidebar on wide screens (web), toggle on mobile
+    const { width } = Dimensions.get('window');
+    const isWideScreen = Platform.OS === 'web' && width >= 768;
 
-        // Muscle Groups & Exercises
-        if (lowerQuery.includes('chest') || lowerQuery.includes('bench') || lowerQuery.includes('push up')) return "For chest development, focusing on Bench Press, Incline Dumbbell Press, and Chest Flyes is effective. Aim for 3-4 sets of 8-12 reps.";
-        if (lowerQuery.includes('back') || lowerQuery.includes('pull') || lowerQuery.includes('row')) return "Great back exercises include Pull-ups, Barbell Rows, and Lat Pulldowns. Focus on squeezing your shoulder blades together at the peak of the movement.";
-        if (lowerQuery.includes('leg') || lowerQuery.includes('squat') || lowerQuery.includes('lunge')) return "Never skip leg day! Squats, Lunges, and Romanian Deadlifts are foundational. Ensure good form to prevent injury and drive through your heels.";
-        if (lowerQuery.includes('arm') || lowerQuery.includes('bicep') || lowerQuery.includes('tricep')) return "For arms, try supersetting Bicep Curls with Tricep Dips/Extensions. This keeps the intensity high and pumps blood into the muscles efficiently.";
-        if (lowerQuery.includes('shoulder') || lowerQuery.includes('delts') || lowerQuery.includes('overhead')) return "To build 3D shoulders, target all three heads: Overhead Press for mass, Lateral Raises for width, and Face Pulls for rear delts.";
-        if (lowerQuery.includes('abs') || lowerQuery.includes('core') || lowerQuery.includes('plank')) return "Abs are revealed in the kitchen but built in the gym. Planks, Hanging Leg Raises, and Cable Crunches are superior to standard sit-ups.";
+    useEffect(() => { loadHistory(); }, []);
 
-        // Nutrition & Diet
-        if (lowerQuery.includes('diet') || lowerQuery.includes('food') || lowerQuery.includes('eat') || lowerQuery.includes('nutrition')) return "Nutrition is key! Prioritize protein intake (1.6g-2.2g per kg of bodyweight), stick to whole foods, and stay hydrated.";
-        if (lowerQuery.includes('protein') || lowerQuery.includes('shake') || lowerQuery.includes('supplement')) return "Protein is essential for muscle repair. Whey protein is great post-workout for quick absorption, while Casein is good before bed. Food sources like chicken, eggs, and fish are always best.";
-        if (lowerQuery.includes('weight loss') || lowerQuery.includes('fat') || lowerQuery.includes('lose weight')) return "To lose weight, you need a caloric deficit. Combine resistance training to keep muscle with steady-state cardio or HIIT to burn calories. Consistency > Intensity.";
-        if (lowerQuery.includes('bulk') || lowerQuery.includes('gain') || lowerQuery.includes('muscle')) return "To gain muscle, eat in a slight caloric surplus (250-500 kcal above maintenance). Lift heavy, focus on compound movements, and sleep 7-9 hours.";
+    // ─── Load history ───
+    const loadHistory = async () => {
+        setIsLoadingHistory(true);
+        if (!token) { setIsLoadingHistory(false); return; }
 
-        // Training Principles
-        if (lowerQuery.includes('cardio') || lowerQuery.includes('run') || lowerQuery.includes('stamina')) return "Cardio is great for heart health. For fat loss, try HIIT (High Intensity Interval Training) for 20 mins. For endurance, steady-state running or cycling for 45+ mins is best.";
-        if (lowerQuery.includes('rep') || lowerQuery.includes('set') || lowerQuery.includes('how many')) return "For hypertrophy (muscle growth), aim for 3-4 sets of 8-12 reps. For strength, 3-5 sets of 1-5 reps. For endurance, 2-3 sets of 15+ reps.";
-        if (lowerQuery.includes('rest') || lowerQuery.includes('recover') || lowerQuery.includes('sleep')) return "Muscles grow while you rest, not while you train. Aim for 7-9 hours of sleep and take at least 1-2 rest days per week to prevent burnout.";
-        if (lowerQuery.includes('pain') || lowerQuery.includes('hurt') || lowerQuery.includes('injury')) return "If you feel sharp pain, STOP immediately. soreness is normal, but sharp pain signals injury. Rest the area, ice if needed, and consult a professional if it persists.";
-
-        // General fallback
-        return "That's a great question! Since I'm currently in 'Offline Mode' due to high server traffic, I recommend sticking to the basics: Progressive Overload (add weight/reps weekly), Consistency, and Good Form. If you have a specific question about an exercise or diet, try asking with those keywords!";
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 5000);
+        try {
+            const res = await fetch(`${API_URL}/ai/history`, {
+                headers: { Authorization: `Bearer ${token}` },
+                signal: ctrl.signal,
+            });
+            clearTimeout(tid);
+            if (res.ok) {
+                const data = await res.json();
+                setAllMessages(data.map((m: any) => ({
+                    id: m.id, role: m.role, content: m.content, createdAt: m.createdAt,
+                })));
+            }
+        } catch { clearTimeout(tid); }
+        finally { setIsLoadingHistory(false); }
     };
 
+    const conversations = groupIntoConversations(allMessages);
+
+    // ─── Open a conversation ───
+    const openConvo = (convo: Conversation) => {
+        setActiveMessages(convo.messages);
+        setActiveConvoId(convo.id);
+        setActiveConvoTitle(convo.title);
+        if (!isWideScreen) setShowSidebar(false);
+    };
+
+    // ─── New chat ───
+    const newChat = () => {
+        const welcome: Message = {
+            id: 'welcome', role: 'assistant',
+            content: '👋 Hey! I\'m your AI Coach. Ask me anything about training, nutrition, or your progress!',
+            createdAt: new Date().toISOString(),
+        };
+        setActiveMessages([welcome]);
+        setActiveConvoId(null);
+        setActiveConvoTitle('New Chat');
+        if (!isWideScreen) setShowSidebar(false);
+    };
+
+    // ─── Send message ───
     const sendMessage = async () => {
         if (!input.trim() || isLoading) return;
 
-        const userMessage: Message = {
-            id: Date.now().toString(),
-            role: 'user',
-            content: input.trim()
+        // If on list view, start new chat first
+        if (showSidebar && !isWideScreen) newChat();
+        if (activeMessages.length === 0) newChat();
+
+        const userMsg: Message = {
+            id: Date.now().toString(), role: 'user',
+            content: input.trim(), createdAt: new Date().toISOString(),
         };
 
-        setMessages(prev => [...prev, userMessage]);
+        if (!activeMessages.some(m => m.role === 'user')) {
+            setActiveConvoTitle(userMsg.content.length > 40 ? userMsg.content.substring(0, 40) + '...' : userMsg.content);
+        }
+
+        setActiveMessages(p => [...p, userMsg]);
+        setAllMessages(p => [...p, userMsg]);
         setInput('');
         setIsLoading(true);
+        if (!isWideScreen) setShowSidebar(false);
 
         try {
-            // Attempt Real API Call
-            const completion = await openai.chat.completions.create({
-                messages: [
-                    { role: 'system', content: 'You are a helpful fitness assistant.' },
-                    ...messages.map(m => ({ role: m.role, content: m.content })),
-                    { role: 'user', content: userMessage.content }
-                ],
-                model: 'gpt-3.5-turbo',
+            const ctrl = new AbortController();
+            const tid = setTimeout(() => ctrl.abort(), 15000);
+            const res = await fetch(`${API_URL}/ai/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ message: userMsg.content }),
+                signal: ctrl.signal,
             });
-
-            const aiMessage: Message = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: completion.choices[0].message.content || "I couldn't generate a response."
-            };
-            setMessages(prev => [...prev, aiMessage]);
-        } catch (error: any) {
-            // console.log("AI Error (Falling back to offline mode):", error);
-
-            // Seamless Fallback for ANY error (Quota, Network, Auth)
+            clearTimeout(tid);
+            if (res.ok) {
+                const data = await res.json();
+                const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: data.response, createdAt: new Date().toISOString() };
+                setActiveMessages(p => [...p, aiMsg]);
+                setAllMessages(p => [...p, aiMsg]);
+            } else throw new Error();
+        } catch {
             setTimeout(() => {
-                const fallbackMessage: Message = {
-                    id: (Date.now() + 1).toString(),
-                    role: 'assistant',
-                    content: generateOfflineResponse(userMessage.content)
-                };
-                setMessages(prev => [...prev, fallbackMessage]);
-            }, 1000); // Small delay to feel 'real'
-        } finally {
-            setIsLoading(false);
-        }
+                const fb: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: generateOfflineResponse(userMsg.content, workoutHistory), createdAt: new Date().toISOString() };
+                setActiveMessages(p => [...p, fb]);
+                setAllMessages(p => [...p, fb]);
+            }, 800);
+        } finally { setIsLoading(false); }
     };
 
-    return (
-        <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
-            <View className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <Text className="text-xl font-bold text-gray-900 dark:text-white text-center">AI Coach</Text>
+    // ─── Clear history ───
+    const clearAll = () => {
+        Alert.alert('Clear All History', 'Delete all conversations?', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Clear', style: 'destructive', onPress: async () => {
+                    try { await fetch(`${API_URL}/ai/history`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }); } catch { }
+                    setAllMessages([]);
+                    setActiveMessages([]);
+                    setActiveConvoId(null);
+                    setShowSidebar(true);
+                }
+            }
+        ]);
+    };
+
+    // ═══════════════════════════════════════
+    // SIDEBAR (separate component)
+    // ═══════════════════════════════════════
+    const renderSidebar = () => (
+        <ChatHistorySidebar
+            conversations={conversations}
+            activeConvoId={activeConvoId}
+            isLoading={isLoadingHistory}
+            isWideScreen={isWideScreen}
+            onSelectConvo={openConvo}
+            onNewChat={newChat}
+            onClearAll={clearAll}
+        />
+    );
+
+    // ═══════════════════════════════════════
+    // CHAT PANEL (right / main area)
+    // ═══════════════════════════════════════
+    const renderChat = () => (
+        <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+            {/* Chat Header */}
+            <View className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-row items-center">
+                {!isWideScreen && (
+                    <TouchableOpacity onPress={() => setShowSidebar(true)} className="mr-3 p-1">
+                        <ArrowLeft size={22} color="#4b5563" />
+                    </TouchableOpacity>
+                )}
+                <Text className="text-gray-900 dark:text-white font-bold text-base flex-1" numberOfLines={1}>
+                    {activeConvoTitle}
+                </Text>
             </View>
 
-            <ScrollView
-                className="flex-1 p-4"
-                ref={scrollViewRef}
-                onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-            >
-                {messages.map((msg) => (
-                    <View
-                        key={msg.id}
-                        className={`flex-row mb-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                        {msg.role === 'assistant' && (
+            {/* Messages or Empty state */}
+            {activeMessages.length === 0 ? (
+                <View className="flex-1 items-center justify-center px-8">
+                    <View className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 items-center justify-center mb-4">
+                        <Bot size={32} color="#2563eb" />
+                    </View>
+                    <Text className="text-gray-900 dark:text-white text-xl font-bold mb-2">What can I help with?</Text>
+                    <Text className="text-gray-500 dark:text-gray-400 text-center text-sm mb-6">
+                        Ask about workouts, nutrition, or your progress
+                    </Text>
+                    {/* Quick prompts */}
+                    {['What should I train today?', 'How do I improve my bench press?', 'Give me a push/pull/legs split'].map((p, i) => (
+                        <TouchableOpacity
+                            key={i}
+                            className="w-full bg-white dark:bg-gray-800 rounded-xl p-3.5 mb-2 border border-gray-200 dark:border-gray-700"
+                            onPress={() => { setInput(p); }}
+                            activeOpacity={0.7}
+                        >
+                            <Text className="text-gray-700 dark:text-gray-300 text-sm">{p}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            ) : (
+                <ScrollView
+                    className="flex-1 p-4"
+                    ref={scrollRef}
+                    onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+                >
+                    {activeMessages.map((msg) => (
+                        <View key={msg.id} className={`flex-row mb-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            {msg.role === 'assistant' && (
+                                <View className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 items-center justify-center mr-2">
+                                    <Bot size={16} color="#2563eb" />
+                                </View>
+                            )}
+                            <View className={`rounded-2xl p-4 max-w-[80%] ${msg.role === 'user' ? 'bg-blue-600 rounded-tr-none' : 'bg-white dark:bg-gray-800 rounded-tl-none shadow-sm'}`}>
+                                <Text className={msg.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}>
+                                    {msg.content}
+                                </Text>
+                                {msg.createdAt && msg.id !== 'welcome' && (
+                                    <Text className={`text-xs mt-2 ${msg.role === 'user' ? 'text-blue-200' : 'text-gray-400'}`}>
+                                        {new Date(msg.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                                    </Text>
+                                )}
+                            </View>
+                            {msg.role === 'user' && (
+                                <View className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 items-center justify-center ml-2">
+                                    <UserIcon size={16} color="#4b5563" />
+                                </View>
+                            )}
+                        </View>
+                    ))}
+                    {isLoading && (
+                        <View className="flex-row mb-4 justify-start">
                             <View className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 items-center justify-center mr-2">
                                 <Bot size={16} color="#2563eb" />
                             </View>
-                        )}
-
-                        <View
-                            className={`rounded-2xl p-4 max-w-[80%] ${msg.role === 'user'
-                                ? 'bg-blue-600 rounded-tr-none'
-                                : 'bg-white dark:bg-gray-800 rounded-tl-none shadow-sm'
-                                }`}
-                        >
-                            <Text className={msg.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}>
-                                {msg.content}
-                            </Text>
-                        </View>
-
-                        {msg.role === 'user' && (
-                            <View className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 items-center justify-center ml-2">
-                                <UserIcon size={16} color="#4b5563" className="dark:text-gray-300" />
+                            <View className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-4 shadow-sm">
+                                <ActivityIndicator size="small" color="#2563eb" />
                             </View>
-                        )}
-                    </View>
-                ))}
-                {isLoading && (
-                    <View className="flex-row mb-4 justify-start">
-                        <View className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 items-center justify-center mr-2">
-                            <Bot size={16} color="#2563eb" />
                         </View>
-                        <View className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-4 shadow-sm items-center justify-center">
-                            <ActivityIndicator size="small" color="#2563eb" />
-                        </View>
-                    </View>
-                )}
-            </ScrollView>
+                    )}
+                </ScrollView>
+            )}
 
+            {/* Input */}
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
@@ -156,7 +319,7 @@ export default function AIScreen() {
                 <View className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex-row items-center">
                     <TextInput
                         className="flex-1 bg-gray-100 dark:bg-gray-700/50 rounded-full px-4 py-3 mr-3 text-gray-900 dark:text-white max-h-24"
-                        placeholder="Ask me anything about workouts..."
+                        placeholder="Message AI Coach..."
                         placeholderTextColor="#9ca3af"
                         value={input}
                         onChangeText={setInput}
@@ -171,6 +334,24 @@ export default function AIScreen() {
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
+        </View>
+    );
+
+    // ═══════════════════════════════════════
+    // MAIN LAYOUT
+    // ═══════════════════════════════════════
+    return (
+        <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+            {isWideScreen ? (
+                /* ── Desktop/Web: Side-by-side layout ── */
+                <View className="flex-1 flex-row">
+                    {renderSidebar()}
+                    {renderChat()}
+                </View>
+            ) : (
+                /* ── Mobile: Toggle between sidebar and chat ── */
+                showSidebar ? renderSidebar() : renderChat()
+            )}
         </SafeAreaView>
     );
 }
