@@ -116,11 +116,6 @@ router.post('/weekly', authenticateToken, async (req: any, res) => {
             },
         });
 
-        if (existingSummary) {
-            res.json(existingSummary);
-            return;
-        }
-
         // Fetch this week's workouts
         const workouts = await prisma.workout.findMany({
             where: {
@@ -130,6 +125,20 @@ router.post('/weekly', authenticateToken, async (req: any, res) => {
             include: { exercises: true },
             orderBy: { date: 'desc' },
         });
+
+        // If cached summary exists, check if any new workouts were logged after it was created
+        // If so, delete it and regenerate. Otherwise, return the cached version.
+        if (existingSummary) {
+            const hasNewerWorkouts = workouts.some(
+                (w) => new Date(w.updatedAt || w.createdAt).getTime() > new Date(existingSummary.createdAt).getTime()
+            );
+            if (!hasNewerWorkouts && workouts.length > 0) {
+                res.json(existingSummary);
+                return;
+            }
+            // Delete stale summary so we regenerate below
+            await prisma.weeklySummary.delete({ where: { id: existingSummary.id } });
+        }
 
         // Compute stats
         const stats = computeWeeklyStats(workouts);
