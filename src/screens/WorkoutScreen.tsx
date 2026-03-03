@@ -20,8 +20,8 @@ export default function WorkoutScreen({ navigation }: any) {
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
-        if (activeWorkout) {
-            // Calculate duration from startTime
+        if (activeWorkout && activeWorkout.startTime) {
+            // Only start counting when startTime is set (first exercise added)
             interval = setInterval(() => {
                 const now = Date.now();
                 const start = activeWorkout.startTime || now;
@@ -31,7 +31,7 @@ export default function WorkoutScreen({ navigation }: any) {
             setDuration(0);
         }
         return () => clearInterval(interval);
-    }, [activeWorkout]);
+    }, [activeWorkout, activeWorkout?.startTime]);
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);

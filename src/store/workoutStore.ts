@@ -44,7 +44,7 @@ export const useWorkoutStore = create<WorkoutState>()(
 
             startWorkout: () => set({
                 activeWorkout: {
-                    startTime: Date.now(),
+                    startTime: null,
                     exercises: []
                 }
             }),
@@ -158,9 +158,12 @@ export const useWorkoutStore = create<WorkoutState>()(
 
             addExercise: (exercise) => set((state) => {
                 if (!state.activeWorkout) return state;
+                // Start the timer when the first exercise is added
+                const startTime = state.activeWorkout.startTime || Date.now();
                 return {
                     activeWorkout: {
                         ...state.activeWorkout,
+                        startTime,
                         exercises: [
                             ...state.activeWorkout.exercises,
                             {
