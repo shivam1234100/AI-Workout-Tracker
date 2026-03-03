@@ -10,7 +10,7 @@ export default function ExercisesScreen({ navigation }: any) {
     const [selectedBodyPart, setSelectedBodyPart] = React.useState('All');
     const [selectedDifficulty, setSelectedDifficulty] = React.useState('All');
 
-    const bodyParts = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core', 'Cardio', 'Glutes'];
+    const bodyParts = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps', 'Core', 'Full Body'];
     const difficulties = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
     const getDifficultyColor = (difficulty: string) => {

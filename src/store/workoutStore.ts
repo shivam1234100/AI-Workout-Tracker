@@ -80,6 +80,7 @@ export const useWorkoutStore = create<WorkoutState>()(
 
                     if (token) {
                         try {
+                            console.log('Saving workout to:', `${API_URL}/workouts`);
                             const response = await fetch(`${API_URL}/workouts`, {
                                 method: 'POST',
                                 headers: {
@@ -96,11 +97,31 @@ export const useWorkoutStore = create<WorkoutState>()(
                                     history: [savedWorkout, ...state.history]
                                 }));
                             } else {
-                                // Fallback to local if offline or error, ideally queue for sync
-                                console.error("Failed to save workout to backend");
+                                const errBody = await response.text();
+                                console.error(`Failed to save workout: ${response.status} - ${errBody}`);
+                                // Save locally as fallback
+                                const completedWorkout = {
+                                    ...workoutData,
+                                    id: Math.random().toString(),
+                                    date: new Date().toISOString(),
+                                };
+                                set((state) => ({
+                                    activeWorkout: null,
+                                    history: [completedWorkout, ...state.history]
+                                }));
                             }
                         } catch (error) {
                             console.error("Error saving workout:", error);
+                            // Save locally as fallback on network error
+                            const completedWorkout = {
+                                ...workoutData,
+                                id: Math.random().toString(),
+                                date: new Date().toISOString(),
+                            };
+                            set((state) => ({
+                                activeWorkout: null,
+                                history: [completedWorkout, ...state.history]
+                            }));
                         }
                     } else {
                         // Local fallback (legacy behavior)

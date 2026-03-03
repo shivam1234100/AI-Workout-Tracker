@@ -10,7 +10,8 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-        return res.status(401).json({ error: 'Access denied' });
+        res.status(401).json({ error: 'Access denied' });
+        return;
     }
 
     try {
@@ -19,5 +20,6 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
         next();
     } catch (err) {
         res.status(403).json({ error: 'Invalid token' });
+        return;
     }
 };

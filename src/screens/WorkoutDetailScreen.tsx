@@ -71,7 +71,7 @@ export default function WorkoutDetailScreen({ route, navigation }: any) {
                         <Clock size={20} color="#10b981" className="mb-1" />
                         <Text className="text-lg font-bold text-gray-900 dark:text-white">
                             {workout.startTime && workout.endTime
-                                ? Math.round((workout.endTime - workout.startTime) / 60000) + 'm'
+                                ? Math.round((new Date(workout.endTime).getTime() - new Date(workout.startTime).getTime()) / 60000) + 'm'
                                 : '-'}
                         </Text>
                         <Text className="text-gray-500 dark:text-gray-400 text-xs text-center">Duration</Text>

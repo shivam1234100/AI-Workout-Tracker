@@ -33,7 +33,10 @@ router.post('/register', async (req, res) => {
         const { email, password, name } = req.body;
 
         const existingUser = await prisma.user.findUnique({ where: { email } });
-        if (existingUser) return res.status(400).json({ error: 'User already exists' });
+        if (existingUser) {
+            res.status(400).json({ error: 'User already exists' });
+            return;
+        }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = await prisma.user.create({
@@ -55,10 +58,16 @@ router.post('/login', async (req, res) => {
         const { email, password } = req.body;
         const user = await prisma.user.findUnique({ where: { email } });
 
-        if (!user) return res.status(400).json({ error: 'User not found' });
+        if (!user) {
+            res.status(400).json({ error: 'User not found' });
+            return;
+        }
 
         const validPass = await bcrypt.compare(password, user.password);
-        if (!validPass) return res.status(401).json({ error: 'Wrong password' });
+        if (!validPass) {
+            res.status(401).json({ error: 'Wrong password' });
+            return;
+        }
 
         const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
         res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
@@ -74,7 +83,8 @@ router.post('/forgot-password', async (req, res) => {
 
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
-            return res.status(404).json({ error: 'No account found with this email' });
+            res.status(404).json({ error: 'No account found with this email' });
+            return;
         }
 
         // Generate a simple 6-digit reset code
@@ -149,7 +159,8 @@ router.post('/reset-password', async (req, res) => {
         });
 
         if (!user) {
-            return res.status(400).json({ error: 'Invalid or expired reset code' });
+            res.status(400).json({ error: 'Invalid or expired reset code' });
+            return;
         }
 
         // Hash new password and update user

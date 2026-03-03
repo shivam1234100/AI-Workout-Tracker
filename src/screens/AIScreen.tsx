@@ -30,16 +30,73 @@ function generateOfflineResponse(query: string, workoutHistory: any[]): string {
         const last = workoutHistory[0];
         const names = last.exercises?.map((e: any) => e.name).join(', ') || 'exercises';
         const days = Math.floor((Date.now() - new Date(last.endTime || last.date).getTime()) / 86400000);
-        ctx = ` Your last workout was ${days}d ago (${names}).`;
+        ctx = `\n\n📊 Based on your data: Your last workout was ${days} day${days !== 1 ? 's' : ''} ago (${names}).`;
     }
-    if (lq.includes('chest') || lq.includes('bench')) return `Bench Press, Incline DB Press, Flyes — 3-4×8-12.${ctx}`;
-    if (lq.includes('back') || lq.includes('pull')) return `Pull-ups, Rows, Lat Pulldowns. Squeeze shoulder blades!${ctx}`;
-    if (lq.includes('leg') || lq.includes('squat')) return `Squats, Lunges, RDLs. Drive through heels.${ctx}`;
-    if (lq.includes('shoulder')) return `OHP for mass, Lateral Raises for width, Face Pulls for rear.${ctx}`;
-    if (lq.includes('arm') || lq.includes('bicep')) return `Superset Curls with Tricep Extensions.${ctx}`;
-    if (lq.includes('today') || lq.includes('what should')) return `Try adding 2.5kg or 1-2 extra reps to your main lifts.${ctx}`;
-    return `Focus on progressive overload, consistency, and form!${ctx}`;
+
+    // Weekly / workout plan
+    if (lq.includes('weekly') || lq.includes('week plan') || lq.includes('workout plan') || lq.includes('split') || lq.includes('routine') || lq.includes('program') || lq.includes('schedule'))
+        return `Here's a weekly workout plan:\n\n📅 Day 1 — Chest & Triceps\n• Bench Press: 4×8-10\n• Incline DB Press: 3×10-12\n• Cable Flyes: 3×12-15\n• Tricep Dips: 3×10-12\n• Overhead Extension: 3×12\n\n📅 Day 2 — Back & Biceps\n• Deadlifts: 4×6-8\n• Barbell Rows: 4×8-10\n• Lat Pulldowns: 3×10-12\n• Barbell Curls: 3×10-12\n• Hammer Curls: 3×12\n\n📅 Day 3 — Rest / Active Recovery\n\n📅 Day 4 — Shoulders & Abs\n• OHP: 4×8-10\n• Lateral Raises: 4×12-15\n• Face Pulls: 3×15-20\n• Planks: 3×45-60 sec\n\n📅 Day 5 — Legs\n• Squats: 4×8-10\n• RDLs: 3×10-12\n• Leg Press: 3×12\n• Lunges: 3×12 each\n• Calf Raises: 4×15-20\n\n📅 Day 6 — Full Body / Weak Points\n📅 Day 7 — Rest\n\n💡 Increase weight by 2.5kg when you complete all sets at the top rep range.${ctx}`;
+
+    // Chest
+    if (lq.includes('chest') || lq.includes('bench') || lq.includes('pec'))
+        return `Chest Day:\n\n1. Flat Bench Press — 4×6-8 (heavy compound, rest 2-3 min)\n2. Incline DB Press — 3×8-12 (upper chest, 30-45° incline)\n3. Cable Flyes — 3×12-15 (squeeze at peak for 1 sec)\n4. Dips (lean forward) — 3×10-12\n5. Push-ups — 2 sets to failure\n\n🔑 Tips: Retract shoulder blades, control the eccentric 2-3 sec, don't bounce off chest.${ctx}`;
+
+    // Back
+    if (lq.includes('back') || lq.includes('pull') || lq.includes('row') || lq.includes('lat'))
+        return `Back Day:\n\n1. Pull-ups — 4×6-10 (wider grip = more lats)\n2. Barbell Rows — 4×8-10 (pull to lower chest)\n3. Lat Pulldowns — 3×10-12\n4. Seated Cable Rows — 3×10-12\n5. Single-Arm DB Rows — 3×10-12 each\n6. Face Pulls — 3×15-20\n\n🔑 Tips: Pull with elbows, squeeze shoulder blades, use straps if grip limits you.${ctx}`;
+
+    // Legs
+    if (lq.includes('leg') || lq.includes('squat') || lq.includes('lunge') || lq.includes('quad') || lq.includes('hamstring') || lq.includes('glute'))
+        return `Leg Day:\n\n1. Barbell Squats — 4×6-8 (go to parallel or below)\n2. Romanian Deadlifts — 3×10-12 (hamstrings & glutes)\n3. Leg Press — 3×10-12\n4. Walking Lunges — 3×12 each leg\n5. Leg Curls — 3×12-15\n6. Calf Raises — 4×15-20\n\n🔑 Tips: Drive through heels, brace core, don't skip hamstrings!${ctx}`;
+
+    // Shoulders
+    if (lq.includes('shoulder') || lq.includes('delt'))
+        return `Shoulder Day:\n\n1. Overhead Press — 4×6-8 (primary mass builder)\n2. Lateral Raises — 4×12-15 (don't swing, control negative)\n3. Face Pulls — 3×15-20 (rear delts & posture)\n4. Rear Delt Flyes — 3×12-15\n5. Cable Lateral Raises — 3×12-15\n6. Shrugs — 3×12-15\n\n🔑 Tips: Go lighter on laterals with strict form. Hit rear delts 2-3× per week.${ctx}`;
+
+    // Arms
+    if (lq.includes('arm') || lq.includes('bicep') || lq.includes('tricep') || lq.includes('curl'))
+        return `Arm Day:\n\nBiceps:\n1. Barbell Curls — 3×8-10\n2. Incline DB Curls — 3×10-12\n3. Hammer Curls — 3×10-12\n4. Concentration Curls — 2×12-15\n\nTriceps:\n1. Close-Grip Bench — 3×8-10\n2. Overhead Extension — 3×10-12\n3. Rope Pushdowns — 3×12-15\n4. Dips — 2× to failure\n\n🔑 Triceps = 2/3 of arm size. Superset bi's & tri's for max pump. Train arms 2×/week.${ctx}`;
+
+    // Abs
+    if (lq.includes('abs') || lq.includes('core') || lq.includes('six pack'))
+        return `Core Workout (3-4×/week):\n\n1. Hanging Leg Raises — 3×12-15\n2. Cable Crunches — 3×15-20\n3. Plank — 3×45-60 sec\n4. Russian Twists — 3×20 total\n5. Dead Bugs — 3×12 each side\n6. Ab Wheel Rollouts — 3×8-12\n\n🔑 Abs are revealed through low body fat — diet matters more than crunches!${ctx}`;
+
+    // Nutrition
+    if (lq.includes('nutrition') || lq.includes('diet') || lq.includes('eat') || lq.includes('food') || lq.includes('meal') || lq.includes('protein') || lq.includes('calorie') || lq.includes('macro'))
+        return `Nutrition Guide:\n\n• Protein: 1.6-2.2g/kg bodyweight (chicken, eggs, fish, whey)\n• Carbs: 3-5g/kg (oats, rice, potatoes)\n• Fats: 0.8-1.2g/kg (olive oil, avocado, nuts)\n\nSample Day:\n🌅 Breakfast: 3 eggs + oats + banana (~500 cal)\n🥗 Lunch: Chicken + rice + veggies (~600 cal)\n🍎 Snack: Greek yogurt + nuts (~300 cal)\n🍗 Dinner: Salmon + sweet potato + salad (~600 cal)\n\n💡 Muscle gain = 300-500 cal surplus. Fat loss = 300-500 cal deficit. Track for 2-3 weeks to learn portions.${ctx}`;
+
+    // Weight loss
+    if (lq.includes('weight loss') || lq.includes('lose weight') || lq.includes('burn fat') || lq.includes('cut') || lq.includes('lean'))
+        return `Fat Loss Strategy:\n\n1. Calorie Deficit — Eat 300-500 below TDEE, aim for 0.5-1 kg/week\n2. High Protein — 2.0-2.4g/kg to preserve muscle\n3. Keep Lifting — Don't stop strength training during a cut\n4. Cardio — 2-3 sessions of 20-30 min walking/cycling, or 1-2 HIIT\n5. Sleep 7-9 hrs, walk 8k-10k steps/day, cut liquid calories\n\n⚠️ Don't cut too aggressively or do excessive cardio. Track weekly weight averages, not daily.${ctx}`;
+
+    // Muscle gain
+    if (lq.includes('muscle') || lq.includes('bulk') || lq.includes('gain') || lq.includes('mass') || lq.includes('bigger'))
+        return `Muscle Gain Blueprint:\n\n1. Calorie Surplus — 300-500 above maintenance, 0.25-0.5 kg/week gain\n2. Protein — 1.6-2.2g/kg across 4-5 meals\n3. Training — Each muscle 2×/week, 10-20 sets/muscle/week, 6-12 reps\n4. Progressive Overload — Add weight or reps every session\n5. Sleep 7-9 hrs, rest 1-2 days/week\n\n📈 Beginners gain ~1 kg muscle/month. Intermediates ~0.5 kg/month. Consistency is everything.${ctx}`;
+
+    // Rest / Recovery
+    if (lq.includes('rest') || lq.includes('recover') || lq.includes('sleep') || lq.includes('sore') || lq.includes('tired'))
+        return `Recovery Guide:\n\n😴 Sleep: 7-9 hrs/night, consistent schedule, cool dark room\n\n🚶 Active Recovery: Light walking, foam rolling, yoga on rest days\n\n🥗 Nutrition: Protein + carbs post-workout, anti-inflammatory foods, stay hydrated\n\n⚠️ Signs you need rest: Soreness >3 days, declining performance, poor sleep, no motivation\n\n💡 Wait 48-72 hrs before training the same muscle group again.${ctx}`;
+
+    // What to train today
+    if (lq.includes('today') || lq.includes('what should') || lq.includes('suggest') || lq.includes('recommend'))
+        return `Here's a great Full Body workout for today:\n\n1. Barbell Squats: 3×8\n2. Bench Press: 3×8\n3. Barbell Rows: 3×10\n4. Overhead Press: 3×8\n5. Romanian Deadlifts: 3×10\n6. Plank: 3×45 sec\n\n💡 Rest 90-120 sec between compounds. Try to beat last session's numbers!${ctx}`;
+
+    // HIIT / Cardio
+    if (lq.includes('hiit') || lq.includes('cardio') || lq.includes('run') || lq.includes('endurance'))
+        return `HIIT Workout (20 min):\n\n4 rounds, 40 sec work / 20 sec rest:\n1. Burpees\n2. Mountain Climbers\n3. Jump Squats\n4. Push-ups\n5. High Knees\n6. Plank to Push-up\n\nAlternative: Sprint 30 sec → Walk 60 sec × 8-10 rounds\n\n🔑 Limit to 2-3×/week. Great for fat loss (EPOC effect). Don't combine with heavy leg days.${ctx}`;
+
+    // Form
+    if (lq.includes('form') || lq.includes('technique') || lq.includes('how to'))
+        return `Form Guide for Major Lifts:\n\n🏋️ Bench: Retract shoulder blades, grip wider than shoulders, lower to mid-chest, feet flat.\n\n🏋️ Squat: Bar on upper traps, feet shoulder-width, break at hips & knees together, go to parallel.\n\n🏋️ Deadlift: Bar over mid-foot, hinge at hips, flat back, drive through heels, squeeze glutes at top.\n\n🏋️ OHP: Grip just outside shoulders, press straight up, brace core.\n\n⚠️ Start light, film yourself, stop if sharp pain. Tempo: 2 sec down, 1 sec up.${ctx}`;
+
+    // Greeting
+    if (lq.includes('hello') || lq.includes('hi') || lq.includes('hey'))
+        return `Hey! 👋 I'm your AI Coach. Ask me about:\n\n📋 Workout Plans — "Give me a weekly plan"\n💪 Exercises — "How to train chest?"\n🥗 Nutrition — "What should I eat?"\n📈 Progress — "How to break a plateau?"\n🔥 Fat Loss / Muscle Gain\n😴 Recovery & Sleep\n💊 Supplements\n\nJust ask anything specific and I'll give you a detailed answer!${ctx}`;
+
+    // Default fallback
+    return `Here's some general guidance:\n\n💡 Key Principles:\n1. Progressive Overload — Add weight or reps each session\n2. Consistency — Train 3-5×/week for months\n3. Proper Form — Quality > quantity\n4. Recovery — Sleep 7-9 hrs, eat 1.6-2.2g protein/kg\n5. Patience — Results show in 8-12 weeks\n\nTry asking about specific topics like:\n• "Give me a weekly workout plan"\n• "How to train chest/back/legs"\n• "What should I eat?"\n• "How to lose weight?"\n\nI'll give you a detailed, actionable answer! 🏋️${ctx}`;
 }
+
 
 // ─── Group messages into conversations (30-min gap = new convo) ───
 function groupIntoConversations(messages: Message[]): Conversation[] {
