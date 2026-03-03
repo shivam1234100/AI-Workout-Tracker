@@ -8,6 +8,9 @@ interface User {
     id: string;
     email: string;
     name: string;
+    height?: number | null;
+    weight?: number | null;
+    gender?: string | null;
 }
 
 interface AuthState {
@@ -17,14 +20,16 @@ interface AuthState {
     signIn: (email: string, password: string) => Promise<void>;
     signUp: (email: string, password: string, firstName: string) => Promise<void>;
     signOut: () => void;
+    updateProfile: (data: { height?: number; weight?: number; gender?: string; name?: string }) => Promise<void>;
+    fetchProfile: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             user: null,
             isAuthenticated: false,
-            token: null, // Initialize token
+            token: null,
             signIn: async (email, password) => {
                 try {
                     const response = await fetch(`${API_URL}/auth/login`, {
@@ -36,8 +41,6 @@ export const useAuthStore = create<AuthState>()(
 
                     if (!response.ok) throw new Error(data.error || 'Login failed');
 
-                    // Store token in AsyncStorage (handled by persist middleware mostly, but good to be explicit if separating token)
-                    // For now, we store the whole user object including token if needed, or just rely on persist
                     set({
                         isAuthenticated: true,
                         user: data.user,
@@ -71,6 +74,41 @@ export const useAuthStore = create<AuthState>()(
             },
             signOut: () => {
                 set({ isAuthenticated: false, user: null, token: null });
+            },
+            updateProfile: async (data) => {
+                const { token, user } = get();
+                if (!token) throw new Error('Not authenticated');
+                try {
+                    const response = await fetch(`${API_URL}/auth/profile`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify(data),
+                    });
+                    const updated = await response.json();
+                    if (!response.ok) throw new Error(updated.error || 'Update failed');
+                    set({ user: { ...user, ...updated } as User });
+                } catch (error) {
+                    console.error(error);
+                    throw error;
+                }
+            },
+            fetchProfile: async () => {
+                const { token, user } = get();
+                if (!token) return;
+                try {
+                    const response = await fetch(`${API_URL}/auth/profile`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        set({ user: { ...user, ...data } as User });
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch profile:', error);
+                }
             },
         }),
         {

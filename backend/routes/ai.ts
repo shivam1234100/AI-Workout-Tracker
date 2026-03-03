@@ -113,7 +113,7 @@ function buildUserProfile(workouts: any[]): string {
 // Used when OpenAI API is unavailable — provides
 // detailed, structured, actionable answers.
 // ─────────────────────────────────────────────
-function generateOfflineResponse(query: string, workouts: any[]): string {
+function generateOfflineResponse(query: string, workouts: any[], userProfile?: any): string {
     const lq = query.toLowerCase();
 
     // Build personal context from workouts
@@ -141,6 +141,30 @@ function generateOfflineResponse(query: string, workouts: any[]): string {
         }
         if (prs.length > 0) {
             personalContext += ` Recent lifts include: ${prs.slice(0, 4).join(', ')}.`;
+        }
+    }
+
+    // Add body metrics context
+    if (userProfile) {
+        const metrics: string[] = [];
+        if (userProfile.height) metrics.push(`Height: ${userProfile.height}cm`);
+        if (userProfile.weight) metrics.push(`Weight: ${userProfile.weight}kg`);
+        if (userProfile.gender) metrics.push(`Gender: ${userProfile.gender}`);
+        if (userProfile.height && userProfile.weight) {
+            const bmi = (userProfile.weight / ((userProfile.height / 100) ** 2)).toFixed(1);
+            metrics.push(`BMI: ${bmi}`);
+            const proteinLow = Math.round(userProfile.weight * 1.6);
+            const proteinHigh = Math.round(userProfile.weight * 2.2);
+            metrics.push(`Protein target: ${proteinLow}-${proteinHigh}g/day`);
+            const isMale = userProfile.gender?.toLowerCase() === 'male';
+            const bmr = isMale
+                ? 10 * userProfile.weight + 6.25 * userProfile.height - 5 * 25 + 5
+                : 10 * userProfile.weight + 6.25 * userProfile.height - 5 * 25 - 161;
+            const maintenance = Math.round(bmr * 1.55);
+            metrics.push(`Est. maintenance: ~${maintenance} kcal/day`);
+        }
+        if (metrics.length > 0) {
+            personalContext += `\n📋 Your profile: ${metrics.join(' | ')}`;
         }
     }
 
@@ -769,6 +793,12 @@ router.post('/chat', authenticateToken, async (req: any, res) => {
             take: 20,
         });
 
+        // 1b. Fetch user's body profile
+        const userRecord = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { height: true, weight: true, gender: true, name: true }
+        });
+
         // 2. Build the user training profile
         const userProfile = buildUserProfile(workouts);
 
@@ -784,21 +814,50 @@ router.post('/chat', authenticateToken, async (req: any, res) => {
             data: { role: 'user', content: message, userId },
         });
 
-        // 5. Build the personalized system prompt
-        const systemPrompt = `You are a personalized AI fitness coach named "AI Coach". You have access to this specific user's real workout data. Use it to give specific, data-driven, personalized advice.
+        // 5. Build body metrics context
+        let bodyMetrics = '';
+        if (userRecord) {
+            const parts: string[] = [];
+            if (userRecord.name) parts.push(`Name: ${userRecord.name}`);
+            if (userRecord.gender) parts.push(`Gender: ${userRecord.gender}`);
+            if (userRecord.height) parts.push(`Height: ${userRecord.height} cm`);
+            if (userRecord.weight) parts.push(`Weight: ${userRecord.weight} kg`);
+            if (userRecord.height && userRecord.weight) {
+                const bmi = (userRecord.weight / ((userRecord.height / 100) ** 2)).toFixed(1);
+                parts.push(`BMI: ${bmi}`);
+                // Estimate maintenance calories (Mifflin-St Jeor)
+                const isMale = userRecord.gender?.toLowerCase() === 'male';
+                const bmr = isMale
+                    ? 10 * userRecord.weight + 6.25 * userRecord.height - 5 * 25 + 5
+                    : 10 * userRecord.weight + 6.25 * userRecord.height - 5 * 25 - 161;
+                const maintenance = Math.round(bmr * 1.55); // moderate activity
+                parts.push(`Est. maintenance calories: ~${maintenance} kcal/day (moderate activity)`);
+                const proteinLow = Math.round(userRecord.weight * 1.6);
+                const proteinHigh = Math.round(userRecord.weight * 2.2);
+                parts.push(`Recommended protein: ${proteinLow}-${proteinHigh}g/day`);
+            }
+            if (parts.length > 0) bodyMetrics = '\nUSER\'S BODY METRICS:\n' + parts.join('\n');
+        }
+
+        // 6. Build the personalized system prompt
+        const systemPrompt = `You are a personalized AI fitness coach named "AI Coach". You have access to this specific user's real workout data and body metrics. Use it to give specific, data-driven, personalized advice.
 
 USER'S TRAINING PROFILE:
 ${userProfile}
+${bodyMetrics}
 
 INSTRUCTIONS:
 - Reference their actual exercises, weights, and rep counts when relevant
+- Use their body metrics (height, weight, gender, BMI) to personalize nutrition and training advice
+- Calculate specific calorie and protein targets based on their weight and goals
 - Notice and comment on trends (improving/plateauing/declining performance)
 - Suggest progressive overload based on their recent numbers (e.g., "try 72.5kg next time")
 - Be encouraging, supportive, but data-driven
 - If they ask what to train, consider what they trained recently and suggest something different
 - Keep responses concise (2-4 paragraphs max) and actionable
 - Use emojis sparingly for a friendly tone
-- If they have no workout data, give general beginner-friendly advice and encourage them to log their first workout`;
+- If they have no workout data, give general beginner-friendly advice and encourage them to log their first workout
+- If body metrics are missing, subtly encourage them to update their profile for more personalized advice`;
 
         // 6. Build messages array for OpenAI
         const openaiMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
@@ -824,8 +883,8 @@ INSTRUCTIONS:
             assistantContent = completion.choices[0].message.content || "I couldn't generate a response. Please try again!";
         } catch (aiError: any) {
             console.log('OpenAI API error, using offline fallback:', aiError.message);
-            // Fallback to offline response
-            assistantContent = generateOfflineResponse(message, workouts);
+            // Fallback to offline response with body metrics
+            assistantContent = generateOfflineResponse(message, workouts, userRecord);
         }
 
         // 8. Save the assistant's response to DB
