@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useWorkoutStore } from '../store/workoutStore';
+import { useTheme } from '../context/ThemeContext';
 import { Plus, Trash2, Check, Clock, PlayCircle, X } from 'lucide-react-native';
 
 export default function WorkoutScreen({ navigation }: any) {
@@ -13,6 +14,7 @@ export default function WorkoutScreen({ navigation }: any) {
         updateSet,
         removeSet
     } = useWorkoutStore();
+    const { isDark, colors } = useTheme();
 
     const [duration, setDuration] = useState(0);
     const [isFinishModalVisible, setFinishModalVisible] = useState(false);
@@ -21,7 +23,6 @@ export default function WorkoutScreen({ navigation }: any) {
     useEffect(() => {
         let interval: NodeJS.Timeout;
         if (activeWorkout && activeWorkout.startTime) {
-            // Only start counting when startTime is set (first exercise added)
             interval = setInterval(() => {
                 const now = Date.now();
                 const start = activeWorkout.startTime || now;
@@ -40,7 +41,7 @@ export default function WorkoutScreen({ navigation }: any) {
     };
 
     const handleFinishPress = () => {
-        setWorkoutName(''); // Reset name
+        setWorkoutName('');
         setFinishModalVisible(true);
     };
 
@@ -52,14 +53,14 @@ export default function WorkoutScreen({ navigation }: any) {
 
     if (!activeWorkout) {
         return (
-            <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900 p-4 justify-center items-center">
-                <View className="bg-blue-100 dark:bg-blue-900/50 p-6 rounded-full mb-6">
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} className="p-4 justify-center items-center">
+                <View style={{ backgroundColor: isDark ? 'rgba(37,99,235,0.2)' : '#dbeafe' }} className="p-6 rounded-full mb-6">
                     <PlayCircle size={64} color="#2563eb" />
                 </View>
-                <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-2">No Active Workout</Text>
-                <Text className="text-gray-500 dark:text-gray-400 mb-8 text-center px-8">Ready to hit the gym? Start a new workout to track your sets and reps.</Text>
+                <Text style={{ color: colors.text }} className="text-2xl font-bold mb-2">No Active Workout</Text>
+                <Text style={{ color: colors.textSecondary }} className="mb-8 text-center px-8">Ready to hit the gym? Start a new workout to track your sets and reps.</Text>
                 <TouchableOpacity
-                    className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-xl w-full max-w-xs items-center shadow-lg"
+                    className="bg-blue-600 px-8 py-4 rounded-xl w-full max-w-xs items-center shadow-lg"
                     onPress={startWorkout}
                 >
                     <Text className="text-white font-bold text-lg">Start Empty Workout</Text>
@@ -69,14 +70,14 @@ export default function WorkoutScreen({ navigation }: any) {
     }
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             {/* Header */}
-            <View className="bg-white dark:bg-gray-800 p-4 flex-row justify-between items-center shadow-sm z-10 border-b border-gray-100 dark:border-gray-700">
+            <View style={{ backgroundColor: colors.card, borderBottomColor: colors.border }} className="p-4 flex-row justify-between items-center shadow-sm z-10 border-b">
                 <View>
-                    <Text className="text-lg font-bold text-gray-900 dark:text-white">Current Session</Text>
+                    <Text style={{ color: colors.text }} className="text-lg font-bold">Current Session</Text>
                     <View className="flex-row items-center mt-1">
                         <Clock size={14} color="#2563eb" className="mr-1" />
-                        <Text className="text-blue-600 dark:text-blue-400 font-medium">{formatTime(duration)}</Text>
+                        <Text className="text-blue-600 font-medium">{formatTime(duration)}</Text>
                     </View>
                 </View>
                 <TouchableOpacity
@@ -99,17 +100,18 @@ export default function WorkoutScreen({ navigation }: any) {
                     className="flex-1 justify-end"
                 >
                     <View className="flex-1 bg-black/50 justify-end">
-                        <View className="bg-white dark:bg-gray-900 rounded-t-3xl p-6">
+                        <View style={{ backgroundColor: colors.background }} className="rounded-t-3xl p-6">
                             <View className="flex-row justify-between items-center mb-6">
-                                <Text className="text-2xl font-bold text-gray-900 dark:text-white">Save Workout</Text>
+                                <Text style={{ color: colors.text }} className="text-2xl font-bold">Save Workout</Text>
                                 <TouchableOpacity onPress={() => setFinishModalVisible(false)}>
-                                    <X size={24} color="#6b7280" />
+                                    <X size={24} color={colors.textSecondary} />
                                 </TouchableOpacity>
                             </View>
 
-                            <Text className="text-gray-500 dark:text-gray-400 mb-2 font-medium">Workout Name (Optional)</Text>
+                            <Text style={{ color: colors.textSecondary }} className="mb-2 font-medium">Workout Name (Optional)</Text>
                             <TextInput
-                                className="bg-gray-100 dark:bg-gray-800 p-4 rounded-xl text-gray-900 dark:text-white text-lg mb-6 border border-gray-200 dark:border-gray-700"
+                                style={{ backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }}
+                                className="p-4 rounded-xl text-lg mb-6 border"
                                 placeholder="e.g. Leg Day Destruction"
                                 placeholderTextColor="#9ca3af"
                                 value={workoutName}
@@ -131,51 +133,54 @@ export default function WorkoutScreen({ navigation }: any) {
             <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 100 }}>
                 {activeWorkout.exercises.length === 0 ? (
                     <View className="items-center py-10">
-                        <Text className="text-gray-500 dark:text-gray-400">No exercises added yet.</Text>
+                        <Text style={{ color: colors.textSecondary }}>No exercises added yet.</Text>
                         <TouchableOpacity
                             className="mt-4"
                             onPress={() => navigation.navigate('Exercises')}
                         >
-                            <Text className="text-blue-600 dark:text-blue-400 font-bold">Browse Library</Text>
+                            <Text className="text-blue-600 font-bold">Browse Library</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (
                     activeWorkout.exercises.map((exercise, exerciseIndex) => (
-                        <View key={exercise.id} className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 shadow-sm">
-                            <Text className="text-lg font-bold text-gray-900 dark:text-white mb-3">{exercise.name}</Text>
+                        <View key={exercise.id} style={{ backgroundColor: colors.card }} className="rounded-xl p-4 mb-4 shadow-sm">
+                            <Text style={{ color: colors.text }} className="text-lg font-bold mb-3">{exercise.name}</Text>
 
                             {/* Header Row */}
                             <View className="flex-row mb-2 px-2">
-                                <Text className="w-10 text-gray-400 text-xs font-bold uppercase text-center">Set</Text>
-                                <Text className="flex-1 text-gray-400 text-xs font-bold uppercase text-center">kg</Text>
-                                <Text className="flex-1 text-gray-400 text-xs font-bold uppercase text-center">Reps</Text>
-                                <Text className="w-10 text-gray-400 text-xs font-bold uppercase text-center">Done</Text>
+                                <Text style={{ color: colors.textTertiary }} className="w-10 text-xs font-bold uppercase text-center">Set</Text>
+                                <Text style={{ color: colors.textTertiary }} className="flex-1 text-xs font-bold uppercase text-center">kg</Text>
+                                <Text style={{ color: colors.textTertiary }} className="flex-1 text-xs font-bold uppercase text-center">Reps</Text>
+                                <Text style={{ color: colors.textTertiary }} className="w-10 text-xs font-bold uppercase text-center">Done</Text>
                             </View>
 
                             {exercise.sets.map((set, setIndex) => (
-                                <View key={set.id} className={`flex-row items-center mb-2 px-2 py-2 rounded-lg ${set.completed ? 'bg-green-50 dark:bg-green-900/20' : 'bg-gray-50 dark:bg-gray-700/50'}`}>
-                                    <Text className="w-10 text-center font-bold text-gray-500 dark:text-gray-400">{setIndex + 1}</Text>
+                                <View key={set.id} style={{ backgroundColor: set.completed ? (isDark ? 'rgba(34,197,94,0.1)' : '#f0fdf4') : colors.inputBg }} className="flex-row items-center mb-2 px-2 py-2 rounded-lg">
+                                    <Text style={{ color: colors.textSecondary }} className="w-10 text-center font-bold">{setIndex + 1}</Text>
 
                                     <TextInput
-                                        className="flex-1 bg-white dark:bg-gray-900 mx-2 rounded border border-gray-200 dark:border-gray-600 text-center py-1 text-gray-900 dark:text-white font-medium"
+                                        style={{ backgroundColor: colors.background, color: colors.text, borderColor: colors.border }}
+                                        className="flex-1 mx-2 rounded border text-center py-1 font-medium"
                                         keyboardType="numeric"
                                         placeholder="0"
-                                        placeholderTextColor="#6b7280"
+                                        placeholderTextColor={colors.textSecondary}
                                         value={set.weight.toString()}
                                         onChangeText={(val) => updateSet(exerciseIndex, setIndex, 'weight', Number(val))}
                                     />
 
                                     <TextInput
-                                        className="flex-1 bg-white dark:bg-gray-900 mx-2 rounded border border-gray-200 dark:border-gray-600 text-center py-1 text-gray-900 dark:text-white font-medium"
+                                        style={{ backgroundColor: colors.background, color: colors.text, borderColor: colors.border }}
+                                        className="flex-1 mx-2 rounded border text-center py-1 font-medium"
                                         keyboardType="numeric"
                                         placeholder="0"
-                                        placeholderTextColor="#6b7280"
+                                        placeholderTextColor={colors.textSecondary}
                                         value={set.reps.toString()}
                                         onChangeText={(val) => updateSet(exerciseIndex, setIndex, 'reps', Number(val))}
                                     />
 
                                     <TouchableOpacity
-                                        className={`w-8 h-8 rounded justify-center items-center ${set.completed ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                                        className={`w-8 h-8 rounded justify-center items-center ${set.completed ? 'bg-green-500' : ''}`}
+                                        style={!set.completed ? { backgroundColor: isDark ? '#4b5563' : '#d1d5db' } : undefined}
                                         onPress={() => updateSet(exerciseIndex, setIndex, 'completed', !set.completed)}
                                     >
                                         <Check size={16} color="white" />
@@ -185,11 +190,12 @@ export default function WorkoutScreen({ navigation }: any) {
 
                             <View className="flex-row justify-center mt-3 space-x-4">
                                 <TouchableOpacity
-                                    className="bg-blue-50 dark:bg-blue-900/30 px-4 py-2 rounded-lg flex-row items-center"
+                                    style={{ backgroundColor: isDark ? 'rgba(37,99,235,0.15)' : '#eff6ff' }}
+                                    className="px-4 py-2 rounded-lg flex-row items-center"
                                     onPress={() => addSet(exerciseIndex)}
                                 >
                                     <Plus size={16} color="#2563eb" className="mr-1" />
-                                    <Text className="text-blue-600 dark:text-blue-400 font-bold text-sm">Add Set</Text>
+                                    <Text className="text-blue-600 font-bold text-sm">Add Set</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -198,11 +204,12 @@ export default function WorkoutScreen({ navigation }: any) {
 
                 {/* Add Exercise Button at Bottom */}
                 <TouchableOpacity
-                    className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 border-dashed p-4 rounded-xl items-center flex-row justify-center mt-2"
+                    style={{ borderColor: isDark ? '#1e40af' : '#bfdbfe', backgroundColor: isDark ? 'rgba(37,99,235,0.15)' : '#eff6ff' }}
+                    className="border border-dashed p-4 rounded-xl items-center flex-row justify-center mt-2"
                     onPress={() => navigation.navigate('Exercises')}
                 >
                     <Plus size={20} color="#2563eb" className="mr-2" />
-                    <Text className="text-blue-600 dark:text-blue-400 font-bold">Add Exercise</Text>
+                    <Text className="text-blue-600 font-bold">Add Exercise</Text>
                 </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>

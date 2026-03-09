@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { Home, Dumbbell, PlayCircle, History, BrainCircuit, User } from 'lucide-react-native';
 import { useAuthStore } from '../store/authStore';
-
+import { useTheme } from '../context/ThemeContext';
 
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
@@ -23,17 +23,19 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
+    const { colors } = useTheme();
+
     return (
         <Tab.Navigator
             screenOptions={{
                 headerShown: false,
                 tabBarStyle: {
-                    backgroundColor: '#ffffff',
+                    backgroundColor: colors.tabBar,
                     borderTopWidth: 1,
-                    borderTopColor: '#f3f4f6',
+                    borderTopColor: colors.tabBarBorder,
                 },
-                tabBarActiveTintColor: '#2563eb', // blue-600
-                tabBarInactiveTintColor: '#9ca3af', // gray-400
+                tabBarActiveTintColor: '#2563eb',
+                tabBarInactiveTintColor: colors.tabBarInactive,
             }}
         >
             <Tab.Screen

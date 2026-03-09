@@ -3,22 +3,24 @@ import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native'
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MOCK_EXERCISES } from '../constants/mockData';
+import { useTheme } from '../context/ThemeContext';
 import { Search, ChevronRight, Filter } from 'lucide-react-native';
 
 export default function ExercisesScreen({ navigation }: any) {
     const [searchQuery, setSearchQuery] = React.useState('');
     const [selectedBodyPart, setSelectedBodyPart] = React.useState('All');
     const [selectedDifficulty, setSelectedDifficulty] = React.useState('All');
+    const { isDark, colors } = useTheme();
 
     const bodyParts = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps', 'Core', 'Full Body'];
     const difficulties = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
     const getDifficultyColor = (difficulty: string) => {
         switch (difficulty.toLowerCase()) {
-            case 'beginner': return 'text-green-600';
-            case 'intermediate': return 'text-orange-500';
-            case 'advanced': return 'text-red-500';
-            default: return 'text-gray-500';
+            case 'beginner': return '#16a34a';
+            case 'intermediate': return '#f97316';
+            case 'advanced': return '#ef4444';
+            default: return colors.textSecondary;
         }
     };
 
@@ -31,7 +33,8 @@ export default function ExercisesScreen({ navigation }: any) {
 
     const renderItem = ({ item }: any) => (
         <TouchableOpacity
-            className="bg-white dark:bg-gray-800 p-4 rounded-xl mb-3 shadow-sm flex-row items-center"
+            style={{ backgroundColor: colors.card }}
+            className="p-4 rounded-xl mb-3 shadow-sm flex-row items-center"
             onPress={() => navigation.navigate('ExerciseDetail', { exercise: item })}
         >
             <Image
@@ -43,9 +46,9 @@ export default function ExercisesScreen({ navigation }: any) {
                 placeholder={{ blurhash: 'LKO2?V%2Tw=w]~RBVZRi};RPxuwH' }}
             />
             <View className="flex-1 ml-4">
-                <Text className="text-gray-900 dark:text-white font-bold text-lg">{item.name}</Text>
-                <Text className="text-gray-500 dark:text-gray-400 text-sm">
-                    {item.muscleGroup} • <Text className={`font-bold ${getDifficultyColor(item.difficulty)}`}>{item.difficulty}</Text>
+                <Text style={{ color: colors.text }} className="font-bold text-lg">{item.name}</Text>
+                <Text style={{ color: colors.textSecondary }} className="text-sm">
+                    {item.muscleGroup} • <Text style={{ color: getDifficultyColor(item.difficulty) }} className="font-bold">{item.difficulty}</Text>
                 </Text>
             </View>
             <ChevronRight color="#9ca3af" size={20} />
@@ -53,16 +56,17 @@ export default function ExercisesScreen({ navigation }: any) {
     );
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900 p-4 pb-0">
-            <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Exercise Library</Text>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} className="p-4 pb-0">
+            <Text style={{ color: colors.text }} className="text-2xl font-bold mb-4">Exercise Library</Text>
 
             {/* Search Bar */}
             <View className="flex-row items-center space-x-3 mb-4">
-                <View className="flex-1 bg-white dark:bg-gray-800 flex-row items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                <View style={{ backgroundColor: colors.card, borderColor: colors.border }} className="flex-1 flex-row items-center p-3 rounded-xl border">
                     <Search color="#9ca3af" size={20} className="mr-2" />
                     <TextInput
                         placeholder="Search exercises..."
-                        className="flex-1 text-gray-900 dark:text-white text-base"
+                        style={{ color: colors.text }}
+                        className="flex-1 text-base"
                         placeholderTextColor="#9ca3af"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
@@ -72,7 +76,7 @@ export default function ExercisesScreen({ navigation }: any) {
 
             {/* Filters */}
             <View className="mb-4">
-                <Text className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Body Part</Text>
+                <Text style={{ color: colors.textSecondary }} className="text-xs font-bold mb-2 uppercase tracking-wider">Body Part</Text>
                 <FlatList
                     horizontal
                     data={bodyParts}
@@ -81,9 +85,10 @@ export default function ExercisesScreen({ navigation }: any) {
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             onPress={() => setSelectedBodyPart(item)}
-                            className={`px-4 py-2 rounded-full mr-2 ${selectedBodyPart === item ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-800'}`}
+                            style={selectedBodyPart !== item ? { backgroundColor: isDark ? '#374151' : '#e5e7eb' } : undefined}
+                            className={`px-4 py-2 rounded-full mr-2 ${selectedBodyPart === item ? 'bg-blue-600' : ''}`}
                         >
-                            <Text className={`font-medium ${selectedBodyPart === item ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                            <Text style={selectedBodyPart !== item ? { color: isDark ? '#d1d5db' : '#374151' } : undefined} className={`font-medium ${selectedBodyPart === item ? 'text-white' : ''}`}>
                                 {item}
                             </Text>
                         </TouchableOpacity>
@@ -91,7 +96,7 @@ export default function ExercisesScreen({ navigation }: any) {
                     className="mb-3"
                 />
 
-                <Text className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Difficulty</Text>
+                <Text style={{ color: colors.textSecondary }} className="text-xs font-bold mb-2 uppercase tracking-wider">Difficulty</Text>
                 <FlatList
                     horizontal
                     data={difficulties}
@@ -100,9 +105,10 @@ export default function ExercisesScreen({ navigation }: any) {
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             onPress={() => setSelectedDifficulty(item)}
-                            className={`px-4 py-2 rounded-full mr-2 ${selectedDifficulty === item ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-800'}`}
+                            style={selectedDifficulty !== item ? { backgroundColor: isDark ? '#374151' : '#e5e7eb' } : undefined}
+                            className={`px-4 py-2 rounded-full mr-2 ${selectedDifficulty === item ? 'bg-blue-600' : ''}`}
                         >
-                            <Text className={`font-medium ${selectedDifficulty === item ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                            <Text style={selectedDifficulty !== item ? { color: isDark ? '#d1d5db' : '#374151' } : undefined} className={`font-medium ${selectedDifficulty === item ? 'text-white' : ''}`}>
                                 {item}
                             </Text>
                         </TouchableOpacity>
@@ -118,7 +124,7 @@ export default function ExercisesScreen({ navigation }: any) {
                 contentContainerStyle={{ paddingBottom: 100 }}
                 ListEmptyComponent={
                     <View className="items-center py-10">
-                        <Text className="text-gray-500 dark:text-gray-400">No exercises found matches your filters.</Text>
+                        <Text style={{ color: colors.textSecondary }}>No exercises found matches your filters.</Text>
                     </View>
                 }
             />

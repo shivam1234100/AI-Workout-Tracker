@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Bot, Trash2, Sparkles, PenSquare, MessageSquare } from 'lucide-react-native';
+import { useTheme } from '../context/ThemeContext';
 
 interface Conversation {
     id: string;
@@ -29,20 +30,22 @@ export default function ChatHistorySidebar({
     onNewChat,
     onClearAll,
 }: ChatHistorySidebarProps) {
+    const { isDark, colors } = useTheme();
 
     return (
         <View
-            className={
-                isWideScreen
-                    ? 'w-72 border-r border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900'
-                    : 'flex-1 bg-gray-50 dark:bg-gray-900'
-            }
+            style={{
+                backgroundColor: isWideScreen ? (isDark ? '#111827' : '#f3f4f6') : colors.background,
+                borderRightWidth: isWideScreen ? 1 : 0,
+                borderRightColor: colors.border,
+            }}
+            className={isWideScreen ? 'w-72' : 'flex-1'}
         >
-            {/* ─── Header ─── */}
-            <View className="p-4 flex-row items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            {/* Header */}
+            <View style={{ backgroundColor: colors.card, borderBottomColor: colors.border }} className="p-4 flex-row items-center justify-between border-b">
                 <View className="flex-row items-center">
                     <Sparkles size={18} color="#2563eb" />
-                    <Text className="text-lg font-bold text-gray-900 dark:text-white ml-2">AI Coach</Text>
+                    <Text style={{ color: colors.text }} className="text-lg font-bold ml-2">AI Coach</Text>
                 </View>
                 {conversations.length > 0 && (
                     <TouchableOpacity onPress={onClearAll} className="p-2">
@@ -51,7 +54,7 @@ export default function ChatHistorySidebar({
                 )}
             </View>
 
-            {/* ─── New Chat Button (always on top) ─── */}
+            {/* New Chat Button */}
             <View className="px-3 pt-3 pb-1">
                 <TouchableOpacity
                     className="bg-blue-600 rounded-xl p-3.5 flex-row items-center justify-center shadow-sm"
@@ -63,24 +66,20 @@ export default function ChatHistorySidebar({
                 </TouchableOpacity>
             </View>
 
-            {/* ─── Conversation List ─── */}
+            {/* Conversation List */}
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
                 {isLoading ? (
                     <View className="items-center py-16">
                         <ActivityIndicator size="small" color="#2563eb" />
-                        <Text className="text-gray-400 text-xs mt-2">Loading chats...</Text>
+                        <Text style={{ color: colors.textTertiary }} className="text-xs mt-2">Loading chats...</Text>
                     </View>
                 ) : conversations.length === 0 ? (
                     <View className="items-center py-16 px-6">
-                        <View className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900/30 items-center justify-center mb-3">
+                        <View style={{ backgroundColor: isDark ? 'rgba(37,99,235,0.15)' : '#dbeafe' }} className="w-14 h-14 rounded-full items-center justify-center mb-3">
                             <Bot size={28} color="#2563eb" />
                         </View>
-                        <Text className="text-gray-500 dark:text-gray-400 text-center text-sm">
-                            No conversations yet
-                        </Text>
-                        <Text className="text-gray-400 dark:text-gray-500 text-center text-xs mt-1">
-                            Tap "New Chat" to get started
-                        </Text>
+                        <Text style={{ color: colors.textSecondary }} className="text-center text-sm">No conversations yet</Text>
+                        <Text style={{ color: colors.textTertiary }} className="text-center text-xs mt-1">Tap "New Chat" to get started</Text>
                     </View>
                 ) : (
                     <View className="py-1">
@@ -94,22 +93,24 @@ export default function ChatHistorySidebar({
                                 return (
                                     <View key={convo.id}>
                                         {showDate && (
-                                            <Text className="text-gray-400 dark:text-gray-500 text-xs font-bold uppercase tracking-wider px-4 pt-4 pb-1.5">
+                                            <Text style={{ color: colors.textTertiary }} className="text-xs font-bold uppercase tracking-wider px-4 pt-4 pb-1.5">
                                                 {convo.date}
                                             </Text>
                                         )}
                                         <TouchableOpacity
-                                            className={`mx-2 px-3 py-3 rounded-lg mb-0.5 flex-row items-center ${isActive ? 'bg-blue-100 dark:bg-blue-900/40' : ''}`}
+                                            style={{ backgroundColor: isActive ? (isDark ? 'rgba(37,99,235,0.2)' : '#dbeafe') : 'transparent' }}
+                                            className="mx-2 px-3 py-3 rounded-lg mb-0.5 flex-row items-center"
                                             onPress={() => onSelectConvo(convo)}
                                             activeOpacity={0.7}
                                         >
                                             <MessageSquare
                                                 size={14}
-                                                color={isActive ? '#2563eb' : '#9ca3af'}
+                                                color={isActive ? '#2563eb' : colors.textTertiary}
                                                 style={{ marginRight: 8 }}
                                             />
                                             <Text
-                                                className={`flex-1 text-sm ${isActive ? 'text-blue-700 dark:text-blue-300 font-bold' : 'text-gray-800 dark:text-gray-200'}`}
+                                                style={{ color: isActive ? '#2563eb' : colors.text }}
+                                                className={`flex-1 text-sm ${isActive ? 'font-bold' : ''}`}
                                                 numberOfLines={1}
                                             >
                                                 {convo.title}
