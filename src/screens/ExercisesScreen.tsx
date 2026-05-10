@@ -3,130 +3,151 @@ import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native'
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MOCK_EXERCISES } from '../constants/mockData';
-import { useTheme } from '../context/ThemeContext';
-import { Search, ChevronRight, Filter } from 'lucide-react-native';
+import { useWorkoutStore } from '../store/workoutStore';
+import { useProgramDraftStore } from '../store/programStore';
+import { useTheme, accent, shadows } from '../context/ThemeContext';
+import { Search, Plus, Dumbbell, ChevronRight } from 'lucide-react-native';
+import { useState } from 'react';
 
-export default function ExercisesScreen({ navigation }: any) {
-    const [searchQuery, setSearchQuery] = React.useState('');
-    const [selectedBodyPart, setSelectedBodyPart] = React.useState('All');
-    const [selectedDifficulty, setSelectedDifficulty] = React.useState('All');
+const MUSCLE_GROUPS = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps', 'Core', 'Full Body'];
+
+export default function ExercisesScreen({ navigation, route }: any) {
+    const { activeWorkout, addExercise, startWorkout } = useWorkoutStore();
+    const addExerciseToDay = useProgramDraftStore((s) => s.addExerciseToDay);
+    const mode = route?.params?.mode;
+    const forDayId = route?.params?.forDayId;
+
+    const handleAddExercise = (item: any) => {
+        if (mode === 'program' && forDayId) {
+            addExerciseToDay(forDayId, {
+                exerciseId: item._id,
+                name: item.name,
+                suggestedSets: 3,
+                suggestedReps: 10,
+            });
+            navigation.setParams({ mode: undefined, forDayId: undefined });
+            navigation.navigate('CreateProgram');
+            return;
+        }
+        if (!activeWorkout) startWorkout();
+        addExercise(item);
+        navigation.navigate('Workout');
+    };
     const { isDark, colors } = useTheme();
+    const [search, setSearch] = useState('');
+    const [filter, setFilter] = useState('All');
 
-    const bodyParts = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps', 'Core', 'Full Body'];
-    const difficulties = ['All', 'Beginner', 'Intermediate', 'Advanced'];
+    const filtered = MOCK_EXERCISES.filter(e => {
+        const matchesSearch = e.name.toLowerCase().includes(search.toLowerCase());
+        const matchesFilter = filter === 'All' || e.muscleGroup === filter;
+        return matchesSearch && matchesFilter;
+    });
 
-    const getDifficultyColor = (difficulty: string) => {
-        switch (difficulty.toLowerCase()) {
-            case 'beginner': return '#16a34a';
-            case 'intermediate': return '#f97316';
-            case 'advanced': return '#ef4444';
-            default: return colors.textSecondary;
+    const getDifficultyColor = (d: string) => {
+        switch (d) {
+            case 'Beginner': return accent.green;
+            case 'Intermediate': return accent.amber;
+            case 'Advanced': return accent.red;
+            default: return accent.blue;
         }
     };
 
-    const filteredExercises = MOCK_EXERCISES.filter(ex => {
-        const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesBodyPart = selectedBodyPart === 'All' || ex.muscleGroup === selectedBodyPart;
-        const matchesDifficulty = selectedDifficulty === 'All' || ex.difficulty === selectedDifficulty;
-        return matchesSearch && matchesBodyPart && matchesDifficulty;
-    });
+    const getDifficultyBg = (d: string) => {
+        switch (d) {
+            case 'Beginner': return accent.greenBg;
+            case 'Intermediate': return accent.amberBg;
+            case 'Advanced': return accent.redBg;
+            default: return accent.blueBg;
+        }
+    };
 
-    const renderItem = ({ item }: any) => (
-        <TouchableOpacity
-            style={{ backgroundColor: colors.card }}
-            className="p-4 rounded-xl mb-3 shadow-sm flex-row items-center"
-            onPress={() => navigation.navigate('ExerciseDetail', { exercise: item })}
-        >
-            <Image
-                source={{ uri: item.image }}
-                style={{ width: 64, height: 64, borderRadius: 8 }}
-                contentFit="cover"
-                transition={200}
-                cachePolicy="memory-disk"
-                placeholder={{ blurhash: 'LKO2?V%2Tw=w]~RBVZRi};RPxuwH' }}
-            />
-            <View className="flex-1 ml-4">
-                <Text style={{ color: colors.text }} className="font-bold text-lg">{item.name}</Text>
-                <Text style={{ color: colors.textSecondary }} className="text-sm">
-                    {item.muscleGroup} • <Text style={{ color: getDifficultyColor(item.difficulty) }} className="font-bold">{item.difficulty}</Text>
-                </Text>
-            </View>
-            <ChevronRight color="#9ca3af" size={20} />
-        </TouchableOpacity>
-    );
+    const glassCard = {
+        backgroundColor: colors.card,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        ...shadows.sm,
+    };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} className="p-4 pb-0">
-            <Text style={{ color: colors.text }} className="text-2xl font-bold mb-4">Exercise Library</Text>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+            <View className="px-5 pt-3">
+                <Text style={{ color: colors.text, letterSpacing: -0.5 }} className="text-2xl font-bold mb-1">Exercises</Text>
+                <Text style={{ color: colors.textTertiary }} className="text-sm mb-4">{MOCK_EXERCISES.length} exercises available</Text>
 
-            {/* Search Bar */}
-            <View className="flex-row items-center space-x-3 mb-4">
-                <View style={{ backgroundColor: colors.card, borderColor: colors.border }} className="flex-1 flex-row items-center p-3 rounded-xl border">
-                    <Search color="#9ca3af" size={20} className="mr-2" />
+                {/* Search */}
+                <View style={{ ...glassCard, borderColor: colors.borderInput }} className="flex-row items-center px-4 py-3.5 rounded-2xl mb-4">
+                    <Search size={18} color={colors.textTertiary} />
                     <TextInput
-                        placeholder="Search exercises..."
+                        className="flex-1 ml-3 text-base"
                         style={{ color: colors.text }}
-                        className="flex-1 text-base"
-                        placeholderTextColor="#9ca3af"
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
+                        placeholder="Search exercises..."
+                        placeholderTextColor={colors.textTertiary}
+                        value={search}
+                        onChangeText={setSearch}
                     />
                 </View>
-            </View>
 
-            {/* Filters */}
-            <View className="mb-4">
-                <Text style={{ color: colors.textSecondary }} className="text-xs font-bold mb-2 uppercase tracking-wider">Body Part</Text>
+                {/* Filters */}
                 <FlatList
                     horizontal
-                    data={bodyParts}
+                    data={MUSCLE_GROUPS}
                     showsHorizontalScrollIndicator={false}
                     keyExtractor={(item) => item}
+                    className="mb-4"
                     renderItem={({ item }) => (
                         <TouchableOpacity
-                            onPress={() => setSelectedBodyPart(item)}
-                            style={selectedBodyPart !== item ? { backgroundColor: isDark ? '#374151' : '#e5e7eb' } : undefined}
-                            className={`px-4 py-2 rounded-full mr-2 ${selectedBodyPart === item ? 'bg-blue-600' : ''}`}
+                            style={{
+                                backgroundColor: filter === item ? accent.green : colors.card,
+                                borderWidth: 1,
+                                borderColor: filter === item ? accent.green : colors.borderLight,
+                                ...(filter === item ? shadows.glow(accent.green) : {}),
+                            }}
+                            className="px-4 py-2.5 rounded-xl mr-2"
+                            onPress={() => setFilter(item)}
                         >
-                            <Text style={selectedBodyPart !== item ? { color: isDark ? '#d1d5db' : '#374151' } : undefined} className={`font-medium ${selectedBodyPart === item ? 'text-white' : ''}`}>
-                                {item}
-                            </Text>
-                        </TouchableOpacity>
-                    )}
-                    className="mb-3"
-                />
-
-                <Text style={{ color: colors.textSecondary }} className="text-xs font-bold mb-2 uppercase tracking-wider">Difficulty</Text>
-                <FlatList
-                    horizontal
-                    data={difficulties}
-                    showsHorizontalScrollIndicator={false}
-                    keyExtractor={(item) => item}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            onPress={() => setSelectedDifficulty(item)}
-                            style={selectedDifficulty !== item ? { backgroundColor: isDark ? '#374151' : '#e5e7eb' } : undefined}
-                            className={`px-4 py-2 rounded-full mr-2 ${selectedDifficulty === item ? 'bg-blue-600' : ''}`}
-                        >
-                            <Text style={selectedDifficulty !== item ? { color: isDark ? '#d1d5db' : '#374151' } : undefined} className={`font-medium ${selectedDifficulty === item ? 'text-white' : ''}`}>
-                                {item}
-                            </Text>
+                            <Text style={{ color: filter === item ? 'white' : colors.textSecondary }} className="text-sm font-bold">{item}</Text>
                         </TouchableOpacity>
                     )}
                 />
             </View>
 
             <FlatList
-                data={filteredExercises}
+                data={filtered}
                 keyExtractor={(item) => item._id}
-                renderItem={renderItem}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 100 }}
-                ListEmptyComponent={
-                    <View className="items-center py-10">
-                        <Text style={{ color: colors.textSecondary }}>No exercises found matches your filters.</Text>
-                    </View>
-                }
+                contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 20 }}
+                renderItem={({ item }) => (
+                    <TouchableOpacity
+                        style={glassCard}
+                        className="rounded-2xl mb-3 overflow-hidden flex-row"
+                        onPress={() => navigation.navigate('ExerciseDetail', { exercise: item })}
+                        activeOpacity={0.7}
+                    >
+                        <Image
+                            source={{ uri: item.image }}
+                            style={{ width: 88, height: 88 }}
+                            contentFit="cover"
+                        />
+                        <View className="flex-1 p-4 justify-center">
+                            <Text style={{ color: colors.text }} className="font-bold text-sm">{item.name}</Text>
+                            <View className="flex-row items-center mt-2">
+                                <View style={{ backgroundColor: getDifficultyBg(item.difficulty) }} className="px-2.5 py-1 rounded-lg mr-2">
+                                    <Text style={{ color: getDifficultyColor(item.difficulty) }} className="text-xs font-bold">{item.difficulty}</Text>
+                                </View>
+                                <Text style={{ color: colors.textTertiary }} className="text-xs font-medium">{item.muscleGroup}</Text>
+                            </View>
+                        </View>
+                        <TouchableOpacity
+                            style={{ backgroundColor: accent.greenBg }}
+                            className="w-14 items-center justify-center"
+                            onPress={() => handleAddExercise(item)}
+                        >
+                            <View style={{ backgroundColor: accent.green, ...shadows.glow(accent.green) }} className="w-8 h-8 rounded-xl items-center justify-center">
+                                <Plus size={16} color="white" />
+                            </View>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                )}
             />
         </SafeAreaView>
     );

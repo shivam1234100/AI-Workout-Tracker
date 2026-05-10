@@ -1,73 +1,133 @@
-import React, { createContext, useContext, useMemo } from 'react';
-import { useColorScheme as useDeviceColorScheme } from 'react-native';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { useThemeStore } from '../store/themeStore';
 
-// ─── Color Palette ───
-const lightColors = {
-    background: '#f9fafb',       // gray-50
-    card: '#ffffff',
-    cardAlt: '#f3f4f6',          // gray-100
-    text: '#111827',             // gray-900
-    textSecondary: '#6b7280',    // gray-500
-    textTertiary: '#9ca3af',     // gray-400
-    border: '#f3f4f6',           // gray-100
-    borderInput: '#d1d5db',      // gray-300
-    inputBg: '#f9fafb',          // gray-50
-    tabBar: '#ffffff',
-    tabBarBorder: '#f3f4f6',
-    tabBarInactive: '#9ca3af',
-};
+interface ThemeColors {
+    background: string;
+    card: string;
+    cardGlass: string;
+    cardElevated: string;
+    text: string;
+    textSecondary: string;
+    textTertiary: string;
+    border: string;
+    borderLight: string;
+    borderInput: string;
+    inputBg: string;
+    tabBar: string;
+    tabBarBorder: string;
+    tabBarActive: string;
+    tabBarInactive: string;
+}
 
-const darkColors = {
-    background: '#111827',       // gray-900
-    card: '#1f2937',             // gray-800
-    cardAlt: '#374151',          // gray-700
-    text: '#f9fafb',             // gray-50
-    textSecondary: '#9ca3af',    // gray-400
-    textTertiary: '#6b7280',     // gray-500
-    border: '#374151',           // gray-700
-    borderInput: '#4b5563',      // gray-600
-    inputBg: '#1f2937',          // gray-800
-    tabBar: '#1f2937',
-    tabBarBorder: '#374151',
+const darkColors: ThemeColors = {
+    background: '#0a0e1a',
+    card: '#111827',
+    cardGlass: 'rgba(17, 24, 39, 0.8)',
+    cardElevated: '#1a2332',
+    text: '#f9fafb',
+    textSecondary: '#9ca3af',
+    textTertiary: '#6b7280',
+    border: '#374151',
+    borderLight: '#1f2937',
+    borderInput: '#1f2937',
+    inputBg: '#1a1f2e',
+    tabBar: '#0f1420',
+    tabBarBorder: '#1f2937',
+    tabBarActive: '#22c55e',
     tabBarInactive: '#6b7280',
 };
 
-export type ThemeColors = typeof lightColors;
+const lightColors: ThemeColors = {
+    background: '#f9fafb',
+    card: '#ffffff',
+    cardGlass: 'rgba(255, 255, 255, 0.85)',
+    cardElevated: '#ffffff',
+    text: '#111827',
+    textSecondary: '#4b5563',
+    textTertiary: '#9ca3af',
+    border: '#e5e7eb',
+    borderLight: '#f3f4f6',
+    borderInput: '#e5e7eb',
+    inputBg: '#f9fafb',
+    tabBar: '#ffffff',
+    tabBarBorder: '#e5e7eb',
+    tabBarActive: '#22c55e',
+    tabBarInactive: '#9ca3af',
+};
+
+export const accent = {
+    green: '#22c55e',
+    greenBg: 'rgba(34, 197, 94, 0.12)',
+    greenDark: '#16a34a',
+    red: '#ef4444',
+    redBg: 'rgba(239, 68, 68, 0.12)',
+    amber: '#f59e0b',
+    amberBg: 'rgba(245, 158, 11, 0.12)',
+    indigo: '#6366f1',
+    indigoBg: 'rgba(99, 102, 241, 0.12)',
+    blue: '#3b82f6',
+    blueBg: 'rgba(59, 130, 246, 0.12)',
+    cyan: '#06b6d4',
+    cyanBg: 'rgba(6, 182, 212, 0.12)',
+    purple: '#a855f7',
+    purpleBg: 'rgba(168, 85, 247, 0.12)',
+};
+
+export const shadows = {
+    sm: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    md: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+        elevation: 3,
+    },
+    lg: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 12,
+        elevation: 6,
+    },
+    glow: (color: string) => ({
+        shadowColor: color,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+        elevation: 4,
+    }),
+};
 
 interface ThemeContextValue {
     isDark: boolean;
     colors: ThemeColors;
+    toggleTheme: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextValue>({
-    isDark: false,
-    colors: lightColors,
-});
+const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const { colorScheme: themePreference } = useThemeStore();
-    const deviceColorScheme = useDeviceColorScheme();
-
-    const isDark = useMemo(() => {
-        if (themePreference === 'system') {
-            return deviceColorScheme === 'dark';
-        }
-        return themePreference === 'dark';
-    }, [themePreference, deviceColorScheme]);
-
-    const value = useMemo(() => ({
-        isDark,
-        colors: isDark ? darkColors : lightColors,
-    }), [isDark]);
+export function ThemeProvider({ children }: { children: ReactNode }) {
+    const { theme, toggleTheme } = useThemeStore();
+    const isDark = theme === 'dark';
+    const colors = isDark ? darkColors : lightColors;
 
     return (
-        <ThemeContext.Provider value={value}>
+        <ThemeContext.Provider value={{ isDark, colors, toggleTheme }}>
             {children}
         </ThemeContext.Provider>
     );
 }
 
 export function useTheme() {
-    return useContext(ThemeContext);
+    const ctx = useContext(ThemeContext);
+    if (!ctx) {
+        return { isDark: true, colors: darkColors, toggleTheme: () => {} };
+    }
+    return ctx;
 }

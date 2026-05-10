@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Send, Bot, User as UserIcon, ArrowLeft } from 'lucide-react-native';
+import { Send, Bot, User as UserIcon, ArrowLeft, Sparkles } from 'lucide-react-native';
 import { API_URL } from '../constants/api';
 import { useAuthStore } from '../store/authStore';
 import { useWorkoutStore } from '../store/workoutStore';
 import ChatHistorySidebar from '../components/ChatHistorySidebar';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme, accent, shadows } from '../context/ThemeContext';
 
 interface Message {
     id: string;
@@ -123,6 +123,7 @@ export default function AIScreen() {
     const [activeConvoId, setActiveConvoId] = useState<string | null>(null);
     const [activeConvoTitle, setActiveConvoTitle] = useState('New Chat');
     const [showSidebar, setShowSidebar] = useState(true);
+    const [model, setModel] = useState<'openai' | 'claude' | 'gemini'>('openai');
     const scrollRef = useRef<ScrollView>(null);
     const { token } = useAuthStore();
     const { history: workoutHistory } = useWorkoutStore();
@@ -173,7 +174,7 @@ export default function AIScreen() {
         if (!isWideScreen) setShowSidebar(false);
         try {
             const ctrl = new AbortController(); const tid = setTimeout(() => ctrl.abort(), 15000);
-            const res = await fetch(`${API_URL}/ai/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ message: userMsg.content }), signal: ctrl.signal });
+            const res = await fetch(`${API_URL}/ai/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ message: userMsg.content, model }), signal: ctrl.signal });
             clearTimeout(tid);
             if (res.ok) { const data = await res.json(); const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: data.response, createdAt: new Date().toISOString() }; setActiveMessages(p => [...p, aiMsg]); setAllMessages(p => [...p, aiMsg]); }
             else throw new Error();
@@ -201,25 +202,52 @@ export default function AIScreen() {
     const renderChat = () => (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
             {/* Chat Header */}
-            <View style={{ backgroundColor: colors.card, borderBottomColor: colors.border }} className="p-4 border-b flex-row items-center">
+            <View style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.borderLight, ...shadows.sm }} className="p-4 flex-row items-center">
                 {!isWideScreen && (
-                    <TouchableOpacity onPress={() => setShowSidebar(true)} className="mr-3 p-1">
-                        <ArrowLeft size={22} color={colors.textSecondary} />
+                    <TouchableOpacity onPress={() => setShowSidebar(true)} style={{ backgroundColor: colors.cardGlass, borderWidth: 1, borderColor: colors.borderLight }} className="w-9 h-9 rounded-xl items-center justify-center mr-3">
+                        <ArrowLeft size={18} color={colors.textSecondary} />
                     </TouchableOpacity>
                 )}
+                <View style={{ backgroundColor: accent.blueBg }} className="w-8 h-8 rounded-lg items-center justify-center mr-2">
+                    <Sparkles size={14} color={accent.blue} />
+                </View>
                 <Text style={{ color: colors.text }} className="font-bold text-base flex-1" numberOfLines={1}>{activeConvoTitle}</Text>
+            </View>
+
+            {/* Model selector */}
+            <View style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.borderLight }} className="px-4 py-2 flex-row items-center">
+                <Text style={{ color: colors.textTertiary, fontSize: 11, fontWeight: '700', marginRight: 8 }}>MODEL:</Text>
+                {[
+                    { id: 'openai' as const, label: 'ChatGPT', color: '#10a37f' },
+                    { id: 'claude' as const, label: 'Claude', color: '#d97757' },
+                    { id: 'gemini' as const, label: 'Gemini', color: '#4285f4' },
+                ].map(m => (
+                    <TouchableOpacity
+                        key={m.id}
+                        onPress={() => setModel(m.id)}
+                        className="mr-2 px-3 py-1 rounded-full"
+                        style={{
+                            backgroundColor: model === m.id ? m.color : 'transparent',
+                            borderWidth: 1,
+                            borderColor: model === m.id ? m.color : colors.borderLight,
+                        }}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={{ color: model === m.id ? 'white' : colors.textSecondary, fontSize: 11, fontWeight: '700' }}>{m.label}</Text>
+                    </TouchableOpacity>
+                ))}
             </View>
 
             {/* Messages or Empty state */}
             {activeMessages.length === 0 ? (
                 <View className="flex-1 items-center justify-center px-8">
-                    <View style={{ backgroundColor: isDark ? 'rgba(37,99,235,0.15)' : '#dbeafe' }} className="w-16 h-16 rounded-full items-center justify-center mb-4">
-                        <Bot size={32} color="#2563eb" />
+                    <View style={{ backgroundColor: isDark ? 'rgba(37,99,235,0.12)' : '#dbeafe', ...shadows.md }} className="w-18 h-18 rounded-2xl items-center justify-center mb-5" >
+                        <Bot size={36} color={accent.blue} />
                     </View>
-                    <Text style={{ color: colors.text }} className="text-xl font-bold mb-2">What can I help with?</Text>
-                    <Text style={{ color: colors.textSecondary }} className="text-center text-sm mb-6">Ask about workouts, nutrition, or your progress</Text>
+                    <Text style={{ color: colors.text, letterSpacing: -0.5 }} className="text-xl font-bold mb-2">What can I help with?</Text>
+                    <Text style={{ color: colors.textSecondary }} className="text-center text-sm mb-8">Ask about workouts, nutrition, or your progress</Text>
                     {['What should I train today?', 'How do I improve my bench press?', 'Give me a push/pull/legs split'].map((p, i) => (
-                        <TouchableOpacity key={i} style={{ backgroundColor: colors.card, borderColor: colors.border }} className="w-full rounded-xl p-3.5 mb-2 border" onPress={() => setInput(p)} activeOpacity={0.7}>
+                        <TouchableOpacity key={i} style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.borderLight, ...shadows.sm }} className="w-full rounded-xl p-4 mb-2.5" onPress={() => setInput(p)} activeOpacity={0.7}>
                             <Text style={{ color: colors.textSecondary }} className="text-sm">{p}</Text>
                         </TouchableOpacity>
                     ))}
@@ -229,12 +257,28 @@ export default function AIScreen() {
                     {activeMessages.map((msg) => (
                         <View key={msg.id} className={`flex-row mb-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             {msg.role === 'assistant' && (
-                                <View style={{ backgroundColor: isDark ? 'rgba(37,99,235,0.2)' : '#dbeafe' }} className="w-8 h-8 rounded-full items-center justify-center mr-2">
-                                    <Bot size={16} color="#2563eb" />
+                                <View style={{ backgroundColor: isDark ? 'rgba(37,99,235,0.15)' : '#dbeafe' }} className="w-8 h-8 rounded-xl items-center justify-center mr-2">
+                                    <Bot size={16} color={accent.blue} />
                                 </View>
                             )}
-                            <View style={msg.role === 'user' ? undefined : { backgroundColor: colors.card }} className={`rounded-2xl p-4 max-w-[80%] ${msg.role === 'user' ? 'bg-blue-600 rounded-tr-none' : 'rounded-tl-none shadow-sm'}`}>
-                                <Text style={{ color: msg.role === 'user' ? '#ffffff' : colors.text }}>{msg.content}</Text>
+                            <View style={msg.role === 'user' ? {
+                                backgroundColor: accent.blue,
+                                borderTopRightRadius: 4,
+                                borderTopLeftRadius: 18,
+                                borderBottomLeftRadius: 18,
+                                borderBottomRightRadius: 18,
+                                ...shadows.glow(accent.blue),
+                            } : {
+                                backgroundColor: colors.card,
+                                borderWidth: 1,
+                                borderColor: colors.borderLight,
+                                borderTopLeftRadius: 4,
+                                borderTopRightRadius: 18,
+                                borderBottomLeftRadius: 18,
+                                borderBottomRightRadius: 18,
+                                ...shadows.sm,
+                            }} className="p-4 max-w-[80%]">
+                                <Text style={{ color: msg.role === 'user' ? '#ffffff' : colors.text, lineHeight: 22 }}>{msg.content}</Text>
                                 {msg.createdAt && msg.id !== 'welcome' && (
                                     <Text className={`text-xs mt-2 ${msg.role === 'user' ? 'text-blue-200' : ''}`} style={msg.role !== 'user' ? { color: colors.textTertiary } : undefined}>
                                         {new Date(msg.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
@@ -242,19 +286,19 @@ export default function AIScreen() {
                                 )}
                             </View>
                             {msg.role === 'user' && (
-                                <View style={{ backgroundColor: colors.cardAlt }} className="w-8 h-8 rounded-full items-center justify-center ml-2">
-                                    <UserIcon size={16} color={colors.textSecondary} />
+                                <View style={{ backgroundColor: colors.cardElevated, borderWidth: 1, borderColor: colors.borderLight }} className="w-8 h-8 rounded-xl items-center justify-center ml-2">
+                                    <UserIcon size={14} color={colors.textSecondary} />
                                 </View>
                             )}
                         </View>
                     ))}
                     {isLoading && (
                         <View className="flex-row mb-4 justify-start">
-                            <View style={{ backgroundColor: isDark ? 'rgba(37,99,235,0.2)' : '#dbeafe' }} className="w-8 h-8 rounded-full items-center justify-center mr-2">
-                                <Bot size={16} color="#2563eb" />
+                            <View style={{ backgroundColor: isDark ? 'rgba(37,99,235,0.15)' : '#dbeafe' }} className="w-8 h-8 rounded-xl items-center justify-center mr-2">
+                                <Bot size={16} color={accent.blue} />
                             </View>
-                            <View style={{ backgroundColor: colors.card }} className="rounded-2xl rounded-tl-none p-4 shadow-sm">
-                                <ActivityIndicator size="small" color="#2563eb" />
+                            <View style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.borderLight, borderTopLeftRadius: 4, borderTopRightRadius: 18, borderBottomLeftRadius: 18, borderBottomRightRadius: 18, ...shadows.sm }} className="p-4">
+                                <ActivityIndicator size="small" color={accent.blue} />
                             </View>
                         </View>
                     )}
@@ -263,23 +307,27 @@ export default function AIScreen() {
 
             {/* Input */}
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}>
-                <View style={{ backgroundColor: colors.card, borderTopColor: colors.border }} className="p-4 border-t flex-row items-center">
-                    <TextInput
-                        style={{ backgroundColor: colors.inputBg, color: colors.text }}
-                        className="flex-1 rounded-full px-4 py-3 mr-3 max-h-24"
-                        placeholder="Message AI Coach..."
-                        placeholderTextColor="#9ca3af"
-                        value={input}
-                        onChangeText={setInput}
-                        multiline
-                    />
+                <View style={{ backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.borderLight, ...shadows.md }} className="p-4 flex-row items-center">
+                    <View style={{ backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.borderInput, borderRadius: 20 }} className="flex-1 mr-3 overflow-hidden">
+                        <TextInput
+                            style={{ color: colors.text, paddingHorizontal: 16, paddingVertical: 12, maxHeight: 96 }}
+                            placeholder="Message AI Coach..."
+                            placeholderTextColor={colors.textTertiary}
+                            value={input}
+                            onChangeText={setInput}
+                            multiline
+                        />
+                    </View>
                     <TouchableOpacity
-                        style={{ backgroundColor: input.trim() ? '#2563eb' : (isDark ? '#374151' : '#d1d5db') }}
+                        style={{
+                            backgroundColor: input.trim() ? accent.blue : (isDark ? '#1e1e2a' : '#e5e7eb'),
+                            ...(input.trim() ? shadows.glow(accent.blue) : {}),
+                        }}
                         className="w-12 h-12 rounded-full items-center justify-center"
                         onPress={sendMessage}
                         disabled={!input.trim() || isLoading}
                     >
-                        <Send size={20} color="white" />
+                        <Send size={18} color="white" />
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>

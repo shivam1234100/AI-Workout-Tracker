@@ -775,9 +775,63 @@ Feel free to ask anything specific and I'll give you a detailed answer! 🏋️$
 // ═════════════════════════════════════════════
 // POST /ai/chat — Send message, get personalized AI response
 // ═════════════════════════════════════════════
+// Helper: call Anthropic Claude API
+async function callClaude(systemPrompt: string, messages: any[]): Promise<string> {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new Error('Anthropic API key not configured');
+
+    const userMessages = messages.filter(m => m.role !== 'system');
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+            model: 'claude-3-5-sonnet-20241022',
+            max_tokens: 500,
+            system: systemPrompt,
+            messages: userMessages,
+        }),
+    });
+    if (!res.ok) throw new Error(`Claude API error: ${res.status}`);
+    const data: any = await res.json();
+    return data.content?.[0]?.text || 'No response from Claude';
+}
+
+// Helper: call Google Gemini API
+async function callGemini(systemPrompt: string, messages: any[]): Promise<string> {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error('Gemini API key not configured');
+
+    const contents = messages
+        .filter(m => m.role !== 'system')
+        .map(m => ({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: m.content }],
+        }));
+
+    const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents,
+                generationConfig: { maxOutputTokens: 500, temperature: 0.7 },
+            }),
+        }
+    );
+    if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+    const data: any = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
+}
+
 router.post('/chat', authenticateToken, async (req: any, res) => {
     try {
-        const { message } = req.body;
+        const { message, model = 'openai' } = req.body;
         const userId = req.user.id;
 
         if (!message || typeof message !== 'string') {
@@ -872,17 +926,23 @@ INSTRUCTIONS:
         let assistantContent: string;
 
         try {
-            // 7. Call OpenAI
-            const completion = await openai.chat.completions.create({
-                model: 'gpt-3.5-turbo',
-                messages: openaiMessages,
-                max_tokens: 500,
-                temperature: 0.7,
-            });
-
-            assistantContent = completion.choices[0].message.content || "I couldn't generate a response. Please try again!";
+            // 7. Call selected AI provider
+            if (model === 'claude') {
+                assistantContent = await callClaude(systemPrompt, openaiMessages);
+            } else if (model === 'gemini') {
+                assistantContent = await callGemini(systemPrompt, openaiMessages);
+            } else {
+                // Default: OpenAI
+                const completion = await openai.chat.completions.create({
+                    model: 'gpt-3.5-turbo',
+                    messages: openaiMessages,
+                    max_tokens: 500,
+                    temperature: 0.7,
+                });
+                assistantContent = completion.choices[0].message.content || "I couldn't generate a response. Please try again!";
+            }
         } catch (aiError: any) {
-            console.log('OpenAI API error, using offline fallback:', aiError.message);
+            console.log(`${model} API error, using offline fallback:`, aiError.message);
             // Fallback to offline response with body metrics
             assistantContent = generateOfflineResponse(message, workouts, userRecord);
         }

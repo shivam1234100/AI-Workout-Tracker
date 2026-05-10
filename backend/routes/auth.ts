@@ -31,21 +31,46 @@ router.delete('/delete-all-users', async (req, res) => {
 // Register
 router.post('/register', async (req, res) => {
     try {
-        const { email, password, name } = req.body;
+        const { email, phone, password, name } = req.body;
 
-        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (!email && !phone) {
+            res.status(400).json({ error: 'Email or phone is required' });
+            return;
+        }
+        if (!password || !name) {
+            res.status(400).json({ error: 'Name and password are required' });
+            return;
+        }
+
+        // Check if user exists with this email or phone
+        const existingUser = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    ...(email ? [{ email }] : []),
+                    ...(phone ? [{ phone }] : []),
+                ]
+            }
+        });
         if (existingUser) {
-            res.status(400).json({ error: 'User already exists' });
+            res.status(400).json({ error: 'User already exists with this email or phone' });
             return;
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = await prisma.user.create({
-            data: { email, password: hashedPassword, name }
+            data: {
+                email: email || null,
+                phone: phone || null,
+                password: hashedPassword,
+                name,
+            }
         });
 
         const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-        res.json({ token, user: { id: user.id, name: user.name, email: user.email, height: user.height, weight: user.weight, gender: user.gender } });
+        res.json({
+            token,
+            user: { id: user.id, name: user.name, email: user.email, phone: user.phone, height: user.height, weight: user.weight, gender: user.gender }
+        });
     } catch (error) {
         console.error("Registration Error:", error);
         res.status(500).json({ error: 'Error registering user' });
@@ -56,8 +81,16 @@ router.post('/register', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        const user = await prisma.user.findUnique({ where: { email } });
+        const { email, phone, password } = req.body;
+
+        if (!email && !phone) {
+            res.status(400).json({ error: 'Email or phone is required' });
+            return;
+        }
+
+        const user = await prisma.user.findFirst({
+            where: email ? { email } : { phone }
+        });
 
         if (!user) {
             res.status(400).json({ error: 'User not found' });
@@ -71,8 +104,12 @@ router.post('/login', async (req, res) => {
         }
 
         const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-        res.json({ token, user: { id: user.id, name: user.name, email: user.email, height: user.height, weight: user.weight, gender: user.gender } });
+        res.json({
+            token,
+            user: { id: user.id, name: user.name, email: user.email, phone: user.phone, height: user.height, weight: user.weight, gender: user.gender }
+        });
     } catch (error) {
+        console.error("Login Error:", error);
         res.status(500).json({ error: 'Error logging in' });
     }
 });

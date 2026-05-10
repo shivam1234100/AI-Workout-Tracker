@@ -1,104 +1,134 @@
-import { View, Text, ScrollView, Image, TouchableOpacity, Alert, Linking } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, PlayCircle, Youtube } from 'lucide-react-native';
+import { Image } from 'expo-image';
+import { ArrowLeft, PlayCircle, Youtube, Plus, Dumbbell } from 'lucide-react-native';
 import { useWorkoutStore } from '../store/workoutStore';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme, accent, shadows } from '../context/ThemeContext';
+import React from 'react';
 
 export default function ExerciseDetailScreen({ route, navigation }: any) {
     const { exercise } = route.params;
-    const { activeWorkout, startWorkout, addExercise } = useWorkoutStore();
-    const { isDark, colors } = useTheme();
-
-    const openVideoTutorial = async () => {
-        const query = encodeURIComponent(`${exercise.name} exercise form tutorial`);
-        const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${query}`;
-        const url = exercise.videoUrl || youtubeSearchUrl;
-        try {
-            await Linking.openURL(url);
-        } catch (error) {
-            try { await Linking.openURL(youtubeSearchUrl); }
-            catch { Alert.alert("Error", "Could not open video tutorial."); }
-        }
-    };
+    const { activeWorkout, addExercise, startWorkout } = useWorkoutStore();
 
     const handleAddToWorkout = () => {
-        if (!activeWorkout) {
-            Alert.alert("Start Workout?", "No active workout found. Start one now?", [
-                { text: "Cancel", style: "cancel" },
-                { text: "Start & Add", onPress: () => { startWorkout(); addExercise(exercise); navigation.navigate('Main', { screen: 'Workout' }); } }
-            ]);
-        } else {
-            addExercise(exercise);
-            navigation.navigate('Main', { screen: 'Workout' });
-        }
+        if (!activeWorkout) startWorkout();
+        addExercise(exercise);
+        navigation.navigate('Main', { screen: 'Workout' });
+    };
+    const { isDark, colors } = useTheme();
+
+    const getDifficultyColor = (d: string) => {
+        switch (d) { case 'Beginner': return accent.green; case 'Intermediate': return accent.amber; case 'Advanced': return accent.red; default: return accent.blue; }
+    };
+    const getDifficultyBg = (d: string) => {
+        switch (d) { case 'Beginner': return accent.greenBg; case 'Intermediate': return accent.amberBg; case 'Advanced': return accent.redBg; default: return accent.blueBg; }
     };
 
-    const getDiffBg = () => {
-        if (exercise.difficulty === 'Beginner') return isDark ? 'rgba(34,197,94,0.15)' : '#f0fdf4';
-        if (exercise.difficulty === 'Intermediate') return isDark ? 'rgba(249,115,22,0.15)' : '#fff7ed';
-        return isDark ? 'rgba(239,68,68,0.15)' : '#fef2f2';
-    };
-    const getDiffText = () => {
-        if (exercise.difficulty === 'Beginner') return isDark ? '#4ade80' : '#15803d';
-        if (exercise.difficulty === 'Intermediate') return isDark ? '#fb923c' : '#c2410c';
-        return isDark ? '#f87171' : '#b91c1c';
+    const glassCard = {
+        backgroundColor: colors.card,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        ...shadows.sm,
     };
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Hero image with gradient overlay */}
                 <View className="relative">
-                    <Image source={{ uri: exercise.image }} style={{ width: '100%', height: 288, backgroundColor: colors.cardAlt }} />
-                    <TouchableOpacity
-                        style={{ backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)' }}
-                        className="absolute top-4 left-4 p-2 rounded-full"
-                        onPress={() => navigation.goBack()}
-                    >
-                        <ArrowLeft color={isDark ? '#fff' : '#000'} size={24} />
-                    </TouchableOpacity>
+                    {exercise.image && (
+                        <Image source={{ uri: exercise.image }} style={{ width: '100%', height: 260 }} contentFit="cover" />
+                    )}
+                    {/* Gradient overlay for text contrast */}
+                    <View style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0, height: 120,
+                        backgroundColor: 'transparent',
+                    }} />
+                    <View style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0, height: 80,
+                        backgroundColor: colors.background, opacity: 0.7,
+                    }} />
+                    <View className="absolute top-4 left-4">
+                        <TouchableOpacity
+                            style={{ backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.4)', ...shadows.sm }}
+                            className="w-10 h-10 rounded-full items-center justify-center"
+                            onPress={() => navigation.goBack()}
+                        >
+                            <ArrowLeft size={20} color="white" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
-                <View style={{ backgroundColor: colors.background, borderTopColor: colors.border }} className="p-6 -mt-6 rounded-t-3xl border-t">
-                    <View className="flex-row justify-between items-start mb-2">
-                        <View className="flex-1 mr-2">
-                            <Text style={{ color: colors.text }} className="text-3xl font-bold mb-1">{exercise.name}</Text>
-                            <Text className="text-blue-600 font-medium text-base">{exercise.muscleGroup} • {exercise.equipment}</Text>
+                <View className="px-5 pt-5 pb-10">
+                    <Text style={{ color: colors.text, letterSpacing: -0.5 }} className="text-2xl font-bold mb-3">{exercise.name}</Text>
+                    <View className="flex-row items-center mb-6 flex-wrap">
+                        <View style={{ backgroundColor: getDifficultyBg(exercise.difficulty), borderWidth: 1, borderColor: `${getDifficultyColor(exercise.difficulty)}20` }} className="px-3.5 py-1.5 rounded-xl mr-2">
+                            <Text style={{ color: getDifficultyColor(exercise.difficulty) }} className="text-xs font-bold">{exercise.difficulty}</Text>
                         </View>
-                        <View style={{ backgroundColor: getDiffBg() }} className="px-3 py-1 rounded-full">
-                            <Text style={{ color: getDiffText() }} className="text-xs font-bold uppercase">{exercise.difficulty}</Text>
+                        <View style={{ backgroundColor: accent.blueBg, borderWidth: 1, borderColor: 'rgba(59,130,246,0.1)' }} className="px-3.5 py-1.5 rounded-xl mr-2">
+                            <Text style={{ color: accent.blue }} className="text-xs font-bold">{exercise.muscleGroup}</Text>
                         </View>
+                        {exercise.equipment && (
+                            <View style={{ backgroundColor: colors.cardGlass, borderWidth: 1, borderColor: colors.borderLight }} className="px-3.5 py-1.5 rounded-xl">
+                                <Text style={{ color: colors.textSecondary }} className="text-xs font-bold">{exercise.equipment}</Text>
+                            </View>
+                        )}
                     </View>
 
-                    <TouchableOpacity
-                        style={{ backgroundColor: isDark ? 'rgba(220,38,38,0.15)' : 'rgba(220,38,38,0.1)' }}
-                        className="flex-row items-center p-3 rounded-xl mt-4 mb-2 self-start"
-                        onPress={openVideoTutorial}
-                    >
-                        <Youtube size={20} color="#dc2626" className="mr-2" />
-                        <Text style={{ color: isDark ? '#f87171' : '#dc2626' }} className="font-semibold">Watch Tutorial</Text>
-                    </TouchableOpacity>
-
-                    <View style={{ backgroundColor: colors.border }} className="h-[1px] my-6" />
-
-                    <Text style={{ color: colors.text }} className="text-xl font-bold mb-4">Instructions</Text>
-                    {exercise.instructions.map((step: string, index: number) => (
-                        <View key={index} className="flex-row mb-4">
-                            <View style={{ backgroundColor: isDark ? 'rgba(37,99,235,0.2)' : '#eff6ff' }} className="w-8 h-8 rounded-full items-center justify-center mr-4">
-                                <Text className="text-blue-600 font-bold">{index + 1}</Text>
-                            </View>
-                            <Text style={{ color: colors.textSecondary }} className="flex-1 text-base leading-6 mt-1">{step}</Text>
+                    {/* Instructions */}
+                    {exercise.instructions && (
+                        <View style={glassCard} className="rounded-2xl p-5 mb-4">
+                            <Text style={{ color: colors.textSecondary, letterSpacing: 1 }} className="text-xs font-bold uppercase mb-4">How to Perform</Text>
+                            {exercise.instructions.map((step: string, i: number) => (
+                                <View key={i} className="flex-row mb-4">
+                                    <View style={{ backgroundColor: accent.greenBg, borderWidth: 1, borderColor: 'rgba(16,185,129,0.15)' }} className="w-7 h-7 rounded-full items-center justify-center mr-3 mt-0.5">
+                                        <Text style={{ color: accent.green }} className="text-xs font-bold">{i + 1}</Text>
+                                    </View>
+                                    <Text style={{ color: colors.text, lineHeight: 22 }} className="flex-1 text-base">{step}</Text>
+                                </View>
+                            ))}
                         </View>
-                    ))}
-                    <View className="h-24" />
+                    )}
+
+                    {/* Video Link */}
+                    {exercise.videoUrl && (
+                        <TouchableOpacity
+                            style={{
+                                backgroundColor: isDark ? 'rgba(239,68,68,0.06)' : '#fef2f2',
+                                borderWidth: 1,
+                                borderColor: isDark ? 'rgba(239,68,68,0.12)' : '#fecaca',
+                                ...shadows.sm,
+                            }}
+                            className="rounded-2xl p-4 mb-4 flex-row items-center"
+                            onPress={() => Linking.openURL(exercise.videoUrl)}
+                        >
+                            <View style={{ backgroundColor: accent.redBg }} className="w-11 h-11 rounded-xl items-center justify-center">
+                                <Youtube size={22} color={accent.red} />
+                            </View>
+                            <View className="ml-3 flex-1">
+                                <Text style={{ color: colors.text }} className="font-bold">Watch Tutorial</Text>
+                                <Text style={{ color: colors.textTertiary }} className="text-xs mt-0.5">Video demonstration on YouTube</Text>
+                            </View>
+                        </TouchableOpacity>
+                    )}
+
+                    {/* Add to Workout */}
+                    <TouchableOpacity
+                        style={{
+                            backgroundColor: accent.green,
+                            ...shadows.glow(accent.green),
+                        }}
+                        className="py-4 rounded-2xl flex-row items-center justify-center mt-2"
+                        onPress={handleAddToWorkout}
+                        activeOpacity={0.8}
+                    >
+                        <Plus size={18} color="white" />
+                        <Text className="text-white font-bold text-base ml-2">
+                            {activeWorkout ? 'Add to Workout' : 'Start Workout & Add'}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             </ScrollView>
-
-            <View className="absolute bottom-8 left-6 right-6">
-                <TouchableOpacity className="bg-blue-600 py-4 rounded-xl flex-row justify-center items-center shadow-lg" onPress={handleAddToWorkout}>
-                    <PlayCircle color="white" size={24} className="mr-2" />
-                    <Text className="text-white font-bold text-lg">Add to Workout</Text>
-                </TouchableOpacity>
-            </View>
         </SafeAreaView>
     );
 }

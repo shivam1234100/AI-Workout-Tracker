@@ -1,119 +1,167 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme, accent, shadows } from '../context/ThemeContext';
 import { API_URL } from '../constants/api';
-import { useTheme } from '../context/ThemeContext';
+import { ArrowLeft, Mail, KeyRound, Lock } from 'lucide-react-native';
 
 export default function ForgotPasswordScreen({ navigation }: any) {
     const { colors } = useTheme();
+    const [step, setStep] = useState<1 | 2>(1);
     const [email, setEmail] = useState('');
-    const [resetCode, setResetCode] = useState('');
+    const [code, setCode] = useState('');
     const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState<'email' | 'reset'>('email');
+    const [isLoading, setIsLoading] = useState(false);
 
-    const onSendResetLink = async () => {
-        if (!email) {
-            Alert.alert("Error", "Please enter your email address");
+    const requestCode = async () => {
+        if (!email.trim()) {
+            Alert.alert('Error', 'Enter your email');
             return;
         }
-        setLoading(true);
+        setIsLoading(true);
         try {
-            const response = await fetch(`${API_URL}/auth/forgot-password`, {
+            const res = await fetch(`${API_URL}/auth/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({ email: email.trim() }),
             });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Failed to generate reset code');
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
             if (data.resetCode) {
-                setResetCode(data.resetCode);
-                Alert.alert("Reset Code Generated", `Your reset code is: ${data.resetCode}\n\nEnter this code below to reset your password.`, [{ text: "OK", onPress: () => setStep('reset') }]);
+                Alert.alert('Reset Code', `Your code: ${data.resetCode}`);
             } else {
-                Alert.alert("Reset Code Sent", "A 6-digit reset code has been sent to your email.", [{ text: "OK", onPress: () => setStep('reset') }]);
+                Alert.alert('Sent', 'Check your email for the code');
             }
-        } catch (err: any) {
-            Alert.alert("Error", err.message || "Failed to generate reset code");
+            setStep(2);
+        } catch (e: any) {
+            Alert.alert('Error', e?.message || 'Network error');
         } finally {
-            setLoading(false);
+            setIsLoading(false);
         }
     };
 
-    const onResetPassword = async () => {
-        if (!resetCode || !newPassword || !confirmPassword) { Alert.alert("Error", "Please fill in all fields"); return; }
-        if (newPassword !== confirmPassword) { Alert.alert("Error", "Passwords do not match"); return; }
-        if (newPassword.length < 6) { Alert.alert("Error", "Password must be at least 6 characters"); return; }
-        setLoading(true);
+    const resetPassword = async () => {
+        if (!code || !newPassword) {
+            Alert.alert('Error', 'Enter code and new password');
+            return;
+        }
+        setIsLoading(true);
         try {
-            const response = await fetch(`${API_URL}/auth/reset-password`, {
+            const res = await fetch(`${API_URL}/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: resetCode, newPassword }),
+                body: JSON.stringify({ token: code, newPassword }),
             });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Failed to reset password');
-            Alert.alert("Password Reset Successful", "Your password has been reset. Please log in with your new password.", [{ text: "OK", onPress: () => navigation.navigate('Login') }]);
-        } catch (err: any) {
-            Alert.alert("Error", err.message || "Failed to reset password");
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+            Alert.alert('Success', 'Password reset successful', [
+                { text: 'OK', onPress: () => navigation.goBack() }
+            ]);
+        } catch (e: any) {
+            Alert.alert('Error', e?.message || 'Network error');
         } finally {
-            setLoading(false);
+            setIsLoading(false);
         }
+    };
+
+    const inputStyle = {
+        backgroundColor: colors.inputBg,
+        borderColor: colors.borderInput,
+        color: colors.text,
+        borderWidth: 1,
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} className="justify-center p-6">
-            <Text style={{ color: colors.text }} className="text-3xl font-bold mb-2 text-center">
-                {step === 'email' ? 'Forgot Password' : 'Reset Password'}
-            </Text>
-            <Text style={{ color: colors.textSecondary }} className="text-center mb-8">
-                {step === 'email' ? 'Enter your email to receive a reset link' : 'Enter the reset code from your email'}
-            </Text>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+                <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24 }}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} className="mb-6">
+                        <ArrowLeft size={24} color={colors.text} />
+                    </TouchableOpacity>
 
-            {step === 'email' ? (
-                <View className="space-y-4">
-                    <View>
-                        <Text style={{ color: colors.textSecondary }} className="mb-2 font-medium">Email</Text>
-                        <TextInput autoCapitalize="none" keyboardType="email-address" value={email} placeholder="Enter your email..." placeholderTextColor="#9ca3af" onChangeText={setEmail}
-                            style={{ backgroundColor: colors.inputBg, borderColor: colors.borderInput, color: colors.text }}
-                            className="w-full border rounded-xl p-4" />
-                    </View>
-                    <TouchableOpacity className="bg-blue-600 w-full py-4 rounded-xl items-center mt-6" onPress={onSendResetLink} disabled={loading}>
-                        {loading ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-bold text-lg">Send Reset Link</Text>}
-                    </TouchableOpacity>
-                </View>
-            ) : (
-                <View className="space-y-4">
-                    <View>
-                        <Text style={{ color: colors.textSecondary }} className="mb-2 font-medium">Reset Code</Text>
-                        <TextInput autoCapitalize="characters" value={resetCode} placeholder="Enter reset code..." placeholderTextColor="#9ca3af" onChangeText={setResetCode}
-                            style={{ backgroundColor: colors.inputBg, borderColor: colors.borderInput, color: colors.text }}
-                            className="w-full border rounded-xl p-4" />
-                    </View>
-                    <View>
-                        <Text style={{ color: colors.textSecondary }} className="mb-2 font-medium">New Password</Text>
-                        <TextInput value={newPassword} placeholder="Enter new password..." placeholderTextColor="#9ca3af" secureTextEntry onChangeText={setNewPassword}
-                            style={{ backgroundColor: colors.inputBg, borderColor: colors.borderInput, color: colors.text }}
-                            className="w-full border rounded-xl p-4" />
-                    </View>
-                    <View>
-                        <Text style={{ color: colors.textSecondary }} className="mb-2 font-medium">Confirm Password</Text>
-                        <TextInput value={confirmPassword} placeholder="Confirm new password..." placeholderTextColor="#9ca3af" secureTextEntry onChangeText={setConfirmPassword}
-                            style={{ backgroundColor: colors.inputBg, borderColor: colors.borderInput, color: colors.text }}
-                            className="w-full border rounded-xl p-4" />
-                    </View>
-                    <TouchableOpacity className="bg-blue-600 w-full py-4 rounded-xl items-center mt-6" onPress={onResetPassword} disabled={loading}>
-                        {loading ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-bold text-lg">Reset Password</Text>}
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setStep('email')} className="mt-4 items-center">
-                        <Text className="text-blue-600 font-medium">← Back to Email</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
+                    <Text style={{ color: colors.text }} className="text-3xl font-bold mb-2">
+                        {step === 1 ? 'Forgot Password' : 'Reset Password'}
+                    </Text>
+                    <Text style={{ color: colors.textSecondary }} className="text-sm mb-6">
+                        {step === 1 ? "Enter your email to receive a reset code" : "Enter the code and your new password"}
+                    </Text>
 
-            <TouchableOpacity onPress={() => navigation.navigate('Login')} className="mt-6 items-center">
-                <Text style={{ color: colors.textSecondary }}>Remember your password? <Text className="text-blue-600 font-semibold">Log in</Text></Text>
-            </TouchableOpacity>
+                    {step === 1 ? (
+                        <>
+                            <View className="mb-4">
+                                <Text style={{ color: colors.textSecondary }} className="text-xs font-semibold uppercase mb-1.5 ml-1">Email</Text>
+                                <View style={inputStyle} className="rounded-xl px-4 py-3 flex-row items-center">
+                                    <Mail size={16} color={colors.textTertiary} />
+                                    <TextInput
+                                        className="flex-1 ml-3 text-base"
+                                        style={{ color: colors.text }}
+                                        placeholder="you@example.com"
+                                        placeholderTextColor={colors.textTertiary}
+                                        value={email}
+                                        onChangeText={setEmail}
+                                        autoCapitalize="none"
+                                        keyboardType="email-address"
+                                    />
+                                </View>
+                            </View>
+
+                            <TouchableOpacity
+                                onPress={requestCode}
+                                disabled={isLoading}
+                                style={{ backgroundColor: accent.green, opacity: isLoading ? 0.6 : 1 }}
+                                className="rounded-xl py-3.5 items-center"
+                                activeOpacity={0.85}
+                            >
+                                {isLoading ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-base">Send Reset Code</Text>}
+                            </TouchableOpacity>
+                        </>
+                    ) : (
+                        <>
+                            <View className="mb-3">
+                                <Text style={{ color: colors.textSecondary }} className="text-xs font-semibold uppercase mb-1.5 ml-1">Reset Code</Text>
+                                <View style={inputStyle} className="rounded-xl px-4 py-3 flex-row items-center">
+                                    <KeyRound size={16} color={colors.textTertiary} />
+                                    <TextInput
+                                        className="flex-1 ml-3 text-base"
+                                        style={{ color: colors.text }}
+                                        placeholder="6-digit code"
+                                        placeholderTextColor={colors.textTertiary}
+                                        value={code}
+                                        onChangeText={setCode}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                            </View>
+
+                            <View className="mb-4">
+                                <Text style={{ color: colors.textSecondary }} className="text-xs font-semibold uppercase mb-1.5 ml-1">New Password</Text>
+                                <View style={inputStyle} className="rounded-xl px-4 py-3 flex-row items-center">
+                                    <Lock size={16} color={colors.textTertiary} />
+                                    <TextInput
+                                        className="flex-1 ml-3 text-base"
+                                        style={{ color: colors.text }}
+                                        placeholder="New password"
+                                        placeholderTextColor={colors.textTertiary}
+                                        value={newPassword}
+                                        onChangeText={setNewPassword}
+                                        secureTextEntry
+                                    />
+                                </View>
+                            </View>
+
+                            <TouchableOpacity
+                                onPress={resetPassword}
+                                disabled={isLoading}
+                                style={{ backgroundColor: accent.green, opacity: isLoading ? 0.6 : 1 }}
+                                className="rounded-xl py-3.5 items-center"
+                                activeOpacity={0.85}
+                            >
+                                {isLoading ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-base">Reset Password</Text>}
+                            </TouchableOpacity>
+                        </>
+                    )}
+                </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }

@@ -1,67 +1,51 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fetchQuote, fetchArticles, Quote, Article } from '../lib/openai';
+
+const QUOTES = [
+    "The only bad workout is the one that didn't happen.",
+    "Strength does not come from the body. It comes from the will.",
+    "Push yourself, because no one else is going to do it for you.",
+    "The body achieves what the mind believes.",
+    "Sweat is just fat crying.",
+    "Don't limit your challenges. Challenge your limits.",
+    "You don't have to be great to start, but you have to start to be great.",
+    "Your body can stand almost anything. It's your mind you have to convince.",
+    "Success starts with self-discipline.",
+    "Energy and persistence conquer all things.",
+    "Discipline is doing what you hate to do, but doing it like you love it.",
+    "The pain you feel today will be the strength you feel tomorrow.",
+    "Wake up with determination. Go to bed with satisfaction.",
+    "If it doesn't challenge you, it doesn't change you.",
+    "The hardest lift of all is lifting your butt off the couch.",
+];
 
 interface ContentState {
-    dailyQuote: Quote | null;
-    articles: Article[];
-    lastQuoteFetched: number | null;
-    lastArticlesFetched: number | null;
-    isLoading: boolean;
-
-    fetchContent: (isPullToRefresh?: boolean) => Promise<void>;
+    dailyQuote: string;
+    lastUpdated: number;
+    refreshQuote: () => void;
+    getQuote: () => string;
 }
 
 export const useContentStore = create<ContentState>()(
     persist(
         (set, get) => ({
-            dailyQuote: null,
-            articles: [],
-            lastQuoteFetched: null,
-            lastArticlesFetched: null,
-            isLoading: false,
+            dailyQuote: QUOTES[0],
+            lastUpdated: 0,
 
-            fetchContent: async (isPullToRefresh = false) => {
-                const { lastArticlesFetched, isLoading } = get();
+            refreshQuote: () => {
                 const now = Date.now();
                 const ONE_DAY = 24 * 60 * 60 * 1000;
-
-                if (isLoading) return;
-                set({ isLoading: true });
-
-                try {
-                    // Logic:
-                    // Quote: Always refresh on pull-to-refresh, or if empty.
-                    // Articles: Only refresh if > 24h passed, or if empty.
-
-                    // 1. Fetch Quote
-                    const newQuote = await fetchQuote();
-
-                    // 2. Check Article Expiry
-                    let newArticles = get().articles;
-                    let newLastArticlesFetched = lastArticlesFetched;
-
-                    const shouldFetchArticles = !lastArticlesFetched || (now - lastArticlesFetched) > ONE_DAY;
-
-                    if (shouldFetchArticles) {
-                        newArticles = await fetchArticles();
-                        newLastArticlesFetched = now;
-                    }
-
-                    set({
-                        dailyQuote: newQuote,
-                        lastQuoteFetched: now,
-                        articles: newArticles,
-                        lastArticlesFetched: newLastArticlesFetched,
-                        isLoading: false
-                    });
-
-                } catch (error) {
-                    set({ isLoading: false });
-                    console.error("Failed to update content store:", error);
+                if (now - get().lastUpdated > ONE_DAY) {
+                    const random = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+                    set({ dailyQuote: random, lastUpdated: now });
                 }
-            }
+            },
+
+            getQuote: () => {
+                get().refreshQuote();
+                return get().dailyQuote;
+            },
         }),
         {
             name: 'content-storage-v6',

@@ -8,7 +8,7 @@ export const MOCK_EXERCISES = [
         difficulty: 'Intermediate',
         instructions: [
             "Lie on the bench with your eyes under the bar",
-            "Grab the bar with a medium grip-width (thumbs around the bar!)",
+            "Grab the bar with a medium grip-width",
             "Unrack the bar by straightening your arms",
             "Lower the bar to your mid-chest",
             "Press the bar back up until your arms are straight"
@@ -26,7 +26,7 @@ export const MOCK_EXERCISES = [
             "Set bench to 30-45 degree incline",
             "Lift dumbbells to shoulder height",
             "Press weights up until arms are extended",
-            "Lower completely satisfying a full range of motion",
+            "Lower with control through full range of motion",
         ],
         image: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?q=80&w=2070&auto=format&fit=crop',
     },
@@ -81,11 +81,11 @@ export const MOCK_EXERCISES = [
         equipment: 'Barbell',
         difficulty: 'Advanced',
         instructions: [
-            "Stand with your mid-foot under the barbell",
+            "Stand with mid-foot under the barbell",
             "Bend over and grab the bar with a shoulder-width grip",
             "Bend your knees until your shins touch the bar",
             "Lift your chest up and straighten your lower back",
-            "Take a big breath, hold it, and stand up with the weight"
+            "Stand up with the weight, keeping the bar close to your body"
         ],
         image: 'https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=2082&auto=format&fit=crop'
     },
@@ -98,10 +98,10 @@ export const MOCK_EXERCISES = [
         instructions: [
             "Grab bar with overhand grip",
             "Hang with arms fully extended",
-            "Pull yourself up until chin clears bar",
-            "Lower back down with control"
+            "Pull body up until chin clears bar",
+            "Lower with control"
         ],
-        image: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1598971639058-fab3c3109a00?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '8',
@@ -110,12 +110,12 @@ export const MOCK_EXERCISES = [
         equipment: 'Barbell',
         difficulty: 'Intermediate',
         instructions: [
-            "Bend at hips, keep back straight",
-            "Pull bar to lower chest/upper abs",
-            "Squeeze shoulder blades together",
-            "Lower bar with control"
+            "Hinge at hips with bar in hands",
+            "Keep back flat and core tight",
+            "Pull bar to lower chest",
+            "Lower with control"
         ],
-        image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '9',
@@ -124,26 +124,26 @@ export const MOCK_EXERCISES = [
         equipment: 'Cable Machine',
         difficulty: 'Beginner',
         instructions: [
-            "Sit at machine, grab wide bar",
+            "Sit at lat pulldown machine",
+            "Grab bar with wide overhand grip",
             "Pull bar down to upper chest",
-            "Squeeze lats at bottom",
-            "Return bar slowly"
+            "Slowly return to start"
         ],
-        image: 'https://images.unsplash.com/photo-1581009137042-c552e485697a?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1535743686920-55e4145369b9?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '10',
         name: 'Single Arm Dumbbell Row',
         muscleGroup: 'Back',
-        equipment: 'Dumbbell',
+        equipment: 'Dumbbells',
         difficulty: 'Beginner',
         instructions: [
-            "Rest knee and hand on bench",
+            "Place one knee and hand on bench",
+            "Hold dumbbell with free hand",
             "Pull dumbbell to hip",
-            "Keep back flat",
-            "Lower weight fully"
+            "Lower with control"
         ],
-        image: 'https://images.unsplash.com/photo-1550345332-09e3ac987658?q=80&w=1974&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=2070&auto=format&fit=crop',
     },
 
     // --- LEGS ---
@@ -152,15 +152,15 @@ export const MOCK_EXERCISES = [
         name: 'Barbell Squat',
         muscleGroup: 'Legs',
         equipment: 'Barbell',
-        difficulty: 'Advanced',
+        difficulty: 'Intermediate',
         instructions: [
-            "Stand with feet slightly wider than shoulder-width apart",
-            "Hold the barbell across your upper back",
-            "Lower your hips back and down as if sitting in a chair",
-            "Keep your chest up and back straight",
-            "Push through your heels to return to standing"
+            "Position bar on upper back",
+            "Stand with feet shoulder-width apart",
+            "Squat down keeping chest up",
+            "Drive through heels to stand"
         ],
-        image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=2070&auto=format&fit=crop',
+        videoUrl: 'https://www.youtube.com/watch?v=ultWZbUMPL8',
+        image: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '12',
@@ -170,11 +170,11 @@ export const MOCK_EXERCISES = [
         difficulty: 'Beginner',
         instructions: [
             "Sit in leg press machine",
-            "Place feet hip-width on platform",
-            "Lower weight until knees are at 90 degrees",
-            "Push weight back up"
+            "Place feet shoulder-width on platform",
+            "Lower platform until knees are 90 degrees",
+            "Press back up without locking knees"
         ],
-        image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1605296867424-35fc25c9212a?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '13',
@@ -183,12 +183,12 @@ export const MOCK_EXERCISES = [
         equipment: 'Barbell',
         difficulty: 'Intermediate',
         instructions: [
-            "Hold bar at hips",
-            "Hinge at hips, keeping legs slightly bent",
-            "Lower bar until hamstring stretch felt",
-            "Squeeze glutes to return to standing"
+            "Hold barbell at hip height",
+            "Hinge at hips, pushing them back",
+            "Lower bar along legs to mid-shin",
+            "Drive hips forward to return"
         ],
-        image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=2082&auto=format&fit=crop',
     },
     {
         _id: '14',
@@ -197,12 +197,12 @@ export const MOCK_EXERCISES = [
         equipment: 'Dumbbells',
         difficulty: 'Beginner',
         instructions: [
-            "Step forward with one leg",
-            "Lower hips until both knees are 90 degrees",
-            "Push back to start",
-            "Repeat on other side"
+            "Stand with dumbbells at sides",
+            "Step forward into lunge",
+            "Lower until both knees are 90 degrees",
+            "Push back to standing"
         ],
-        image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1434596922112-19c563067271?q=80&w=2074&auto=format&fit=crop',
     },
     {
         _id: '15',
@@ -211,26 +211,26 @@ export const MOCK_EXERCISES = [
         equipment: 'Machine',
         difficulty: 'Beginner',
         instructions: [
-            "Sit in machine, pad on ankles",
+            "Sit in leg extension machine",
+            "Position pad above ankles",
             "Extend legs until straight",
-            "Squeeze quads at top",
-            "Lower slowly"
+            "Lower with control"
         ],
-        image: 'https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?q=80&w=2069&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1605296867424-35fc25c9212a?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '16',
         name: 'Calf Raises',
         muscleGroup: 'Legs',
-        equipment: 'Machine',
+        equipment: 'Bodyweight',
         difficulty: 'Beginner',
         instructions: [
-            "Stand with toes on platform",
-            "Rise up onto toes",
+            "Stand with balls of feet on edge",
             "Lower heels below platform",
-            "Repeat for reps"
+            "Raise up onto toes as high as possible",
+            "Lower with control"
         ],
-        image: 'https://images.unsplash.com/photo-1581009137042-c552e485697a?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1434596922112-19c563067271?q=80&w=2074&auto=format&fit=crop',
     },
 
     // --- SHOULDERS ---
@@ -241,12 +241,12 @@ export const MOCK_EXERCISES = [
         equipment: 'Barbell',
         difficulty: 'Intermediate',
         instructions: [
-            "Stand with bar at shoulders",
-            "Press bar directly overhead",
-            "Lock arms at top",
-            "Lower to collarbone"
+            "Stand with bar at shoulder level",
+            "Brace core",
+            "Press bar overhead until arms straight",
+            "Lower with control"
         ],
-        image: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=2069&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1532029837206-abbe2b7620e3?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '18',
@@ -256,25 +256,25 @@ export const MOCK_EXERCISES = [
         difficulty: 'Beginner',
         instructions: [
             "Hold dumbbells at sides",
-            "Raise arms to shoulder height",
-            "Keep slight bend in elbows",
-            "Lower slowly"
+            "Raise arms out to shoulder height",
+            "Pause briefly at top",
+            "Lower with control"
         ],
-        image: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=2069&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '19',
         name: 'Face Pulls',
         muscleGroup: 'Shoulders',
-        equipment: 'Cable',
-        difficulty: 'Intermediate',
+        equipment: 'Cable Machine',
+        difficulty: 'Beginner',
         instructions: [
-            "Set cable to face height",
-            "Pull rope towards forehead",
-            "External rotation at end",
-            "Squeeze rear delts"
+            "Set cable at face height",
+            "Pull rope toward face",
+            "Squeeze rear delts",
+            "Return with control"
         ],
-        image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1581009137042-c552e485697a?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '20',
@@ -283,15 +283,15 @@ export const MOCK_EXERCISES = [
         equipment: 'Dumbbells',
         difficulty: 'Beginner',
         instructions: [
-            "Hold weights in front of thighs",
-            "Raise arms to shoulder level",
-            "Keep torso steady",
+            "Hold dumbbells in front of thighs",
+            "Raise arms forward to shoulder height",
+            "Pause at top",
             "Lower with control"
         ],
-        image: 'https://images.unsplash.com/photo-1581009137042-c552e485697a?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=2070&auto=format&fit=crop',
     },
 
-    // --- ARMS ---
+    // --- BICEPS ---
     {
         _id: '21',
         name: 'Barbell Curls',
@@ -299,12 +299,12 @@ export const MOCK_EXERCISES = [
         equipment: 'Barbell',
         difficulty: 'Beginner',
         instructions: [
-            "Hold bar with underhand grip",
-            "Curl weight up to shoulders",
-            "Squeeze biceps at top",
-            "Lower slowly"
+            "Hold barbell with shoulder-width grip",
+            "Keep elbows at sides",
+            "Curl bar to shoulders",
+            "Lower with control"
         ],
-        image: 'https://images.unsplash.com/photo-1581009137042-c552e485697a?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '22',
@@ -313,26 +313,28 @@ export const MOCK_EXERCISES = [
         equipment: 'Dumbbells',
         difficulty: 'Beginner',
         instructions: [
-            "Hold dumbbells with neutral grip",
-            "Curl towards shoulders",
-            "Keep elbows tucked",
+            "Hold dumbbells at sides, palms facing in",
+            "Curl weights to shoulders",
+            "Keep elbows pinned",
             "Lower with control"
         ],
-        image: 'https://images.unsplash.com/photo-1576678927484-cc907957088c?q=80&w=2069&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=2070&auto=format&fit=crop',
     },
+
+    // --- TRICEPS ---
     {
         _id: '23',
         name: 'Tricep Pushdowns',
         muscleGroup: 'Triceps',
-        equipment: 'Cable',
+        equipment: 'Cable Machine',
         difficulty: 'Beginner',
         instructions: [
-            "Grab cable attachment",
+            "Stand at cable machine with bar attachment",
             "Keep elbows at sides",
-            "Push down until arms straight",
-            "Squeeze triceps"
+            "Push bar down until arms straight",
+            "Return slowly"
         ],
-        image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1581009137042-c552e485697a?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '24',
@@ -341,12 +343,12 @@ export const MOCK_EXERCISES = [
         equipment: 'Barbell',
         difficulty: 'Intermediate',
         instructions: [
-            "Lie on bench, hold bar over chest",
-            "Bend elbows to lower bar to forehead",
-            "Extend arms back up",
-            "Keep elbows stationary"
+            "Lie on bench holding bar overhead",
+            "Lower bar toward forehead",
+            "Keep elbows pointing up",
+            "Extend arms back to start"
         ],
-        image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '25',
@@ -355,12 +357,12 @@ export const MOCK_EXERCISES = [
         equipment: 'Bodyweight',
         difficulty: 'Intermediate',
         instructions: [
-            "Support body on bars",
-            "Lower body by bending elbows",
+            "Support body on parallel bars",
+            "Lower until elbows are 90 degrees",
             "Press back up to straight arms",
-            "Keep torso upright for triceps"
+            "Keep body upright for triceps focus"
         ],
-        image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=2069&auto=format&fit=crop',
     },
 
     // --- CORE ---
@@ -371,12 +373,12 @@ export const MOCK_EXERCISES = [
         equipment: 'Bodyweight',
         difficulty: 'Beginner',
         instructions: [
-            "Hold push-up position on forearms",
+            "Start in forearm plank position",
             "Keep body in straight line",
             "Engage core and glutes",
             "Hold for time"
         ],
-        image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=2069&auto=format&fit=crop',
     },
     {
         _id: '27',
@@ -385,14 +387,15 @@ export const MOCK_EXERCISES = [
         equipment: 'Bodyweight',
         difficulty: 'Beginner',
         instructions: [
-            "Lie on back, knees bent",
-            "Curl shoulders off ground",
-            "Squeeze abs",
-            "Lower slowly"
+            "Lie on back with knees bent",
+            "Place hands behind head",
+            "Curl shoulders off the floor",
+            "Lower with control"
         ],
-        image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=2070&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=2069&auto=format&fit=crop',
     },
-    // --- ADVANCED ADDITIONS ---
+
+    // --- FULL BODY ---
     {
         _id: '101',
         name: 'Clean and Jerk',
@@ -400,12 +403,12 @@ export const MOCK_EXERCISES = [
         equipment: 'Barbell',
         difficulty: 'Advanced',
         instructions: [
-            "Lift bar from ground to shoulders (clean)",
-            "Dip knees slightly",
-            "Example power to drive bar overhead (jerk)",
-            "Lock arms out and stand tall"
+            "Pull bar from floor to shoulders explosively",
+            "Drop into front squat catch",
+            "Stand up fully",
+            "Drive bar overhead with split jerk"
         ],
-        image: 'https://images.unsplash.com/photo-1522898467493-49726bf28798?q=80&w=2070&auto=format&fit=crop'
+        image: 'https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=2082&auto=format&fit=crop',
     },
     {
         _id: '102',
@@ -414,40 +417,40 @@ export const MOCK_EXERCISES = [
         equipment: 'Barbell',
         difficulty: 'Advanced',
         instructions: [
-            "Start with wide grip on bar",
-            "Explosively lift bar from ground over head in one motion",
-            "Drop into squat to catch bar",
-            "Stand up with bar overhead"
+            "Wide grip on barbell",
+            "Pull explosively from floor to overhead in one motion",
+            "Catch in overhead squat",
+            "Stand up"
         ],
-        image: 'https://images.unsplash.com/photo-1522898467493-49726bf28798?q=80&w=2070&auto=format&fit=crop'
+        image: 'https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=2082&auto=format&fit=crop',
     },
     {
         _id: '103',
-        name: 'Front Squat',
-        muscleGroup: 'Legs',
-        equipment: 'Barbell',
+        name: 'Muscle-Up',
+        muscleGroup: 'Full Body',
+        equipment: 'Bar',
         difficulty: 'Advanced',
         instructions: [
-            "Rest bar on front deltoids",
-            "Keep elbows high",
-            "Squat down keeping torso very upright",
-            "Drive back up"
+            "Hang from bar",
+            "Explosive pull-up with hip drive",
+            "Transition over the bar",
+            "Press to full lockout"
         ],
-        image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=2070&auto=format&fit=crop'
+        image: 'https://images.unsplash.com/photo-1598971639058-fab3c3109a00?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '104',
-        name: 'Muscle-Up',
-        muscleGroup: 'Full Body',
-        equipment: 'Bar/Rings',
-        difficulty: 'Advanced',
+        name: 'Front Squat',
+        muscleGroup: 'Legs',
+        equipment: 'Barbell',
+        difficulty: 'Intermediate',
         instructions: [
-            "Start hanging from bar",
-            "Explosive pull-up to chest",
-            "Transition wrists over bar",
-            "Press up to straight arms"
+            "Rest bar on front of shoulders",
+            "Keep elbows up high",
+            "Squat down keeping torso upright",
+            "Drive up through heels"
         ],
-        image: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?q=80&w=2070&auto=format&fit=crop'
+        image: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=2070&auto=format&fit=crop',
     },
     {
         _id: '105',
@@ -456,74 +459,11 @@ export const MOCK_EXERCISES = [
         equipment: 'Bodyweight',
         difficulty: 'Advanced',
         instructions: [
-            "Stand on one leg, other extended forward",
-            "Lower hips until hamstring touches calf",
-            "Keep extended leg off ground",
-            "Push back up to standing"
+            "Stand on one leg",
+            "Extend other leg forward",
+            "Squat down on standing leg",
+            "Stand back up"
         ],
-        image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=2069&auto=format&fit=crop'
-    }
-];
-
-export const MOCK_STATS = {
-    totalWorkouts: 12,
-    totalExercises: 45,
-    lastWorkout: '2026-01-08'
-};
-
-export const MOCK_RECENT_WORKOUTS = [
-    { id: '101', name: 'Chest Day', date: '2026-01-08', exercises: 4 },
-    { id: '102', name: 'Leg Day', date: '2026-01-05', exercises: 5 }
-];
-
-export const MOCK_QUOTES = [
-    { text: "The only bad workout is the one that didn't happen.", author: "Unknown" },
-    { text: "Fitness is not about being better than someone else. It’s about being better than you were yesterday.", author: "Khloe Kardashian" },
-    { text: "Motivation is what gets you started. Habit is what keeps you going.", author: "Jim Ryun" },
-    { text: "Your body can stand almost anything. It’s your mind that you have to convince.", author: "Unknown" },
-    { text: "Success starts with self-discipline.", author: "Unknown" },
-    { text: "Don't stop when you're tired. Stop when you're done.", author: "David Goggins" }
-];
-
-export const MOCK_ARTICLES = [
-    {
-        id: '1',
-        title: '5 Tips for Better Sleep Recovery',
-        category: 'Recovery',
-        readTime: '3 min',
-        image: 'https://images.unsplash.com/photo-1541480601022-2308c0f9c4b0?q=80&w=2070&auto=format&fit=crop',
-        url: 'https://www.sleepfoundation.org/physical-health/sleep-and-muscle-recovery'
+        image: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=2070&auto=format&fit=crop',
     },
-    {
-        id: '2',
-        title: 'Protein: How Much Do You Really Need?',
-        category: 'Nutrition',
-        readTime: '5 min',
-        image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=2053&auto=format&fit=crop',
-        url: 'https://www.healthline.com/nutrition/how-much-protein-per-day'
-    },
-    {
-        id: '3',
-        title: 'The Benefits of Stretching Daily',
-        category: 'Mobility',
-        readTime: '4 min',
-        image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=2070&auto=format&fit=crop',
-        url: 'https://www.healthline.com/health/benefits-of-stretching'
-    },
-    {
-        id: '4',
-        title: 'Hydration Hacks for Athletes',
-        category: 'Nutrition',
-        readTime: '3 min',
-        image: 'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?q=80&w=2070&auto=format&fit=crop',
-        url: 'https://www.healthline.com/nutrition/hydration-for-athletes'
-    },
-    {
-        id: '5',
-        title: 'The Power of Mindfulness in Training',
-        category: 'Wellness',
-        readTime: '6 min',
-        image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=2070&auto=format&fit=crop',
-        url: 'https://www.healthline.com/health/mind-body/mindfulness-exercises'
-    }
 ];

@@ -1,96 +1,104 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Calendar, Clock, Dumbbell } from 'lucide-react-native';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme, accent, shadows } from '../context/ThemeContext';
+import { ArrowLeft, Dumbbell, Clock, TrendingUp } from 'lucide-react-native';
 
 export default function WorkoutDetailScreen({ route, navigation }: any) {
     const { workout } = route.params;
-    const { isDark, colors } = useTheme();
+    const { colors } = useTheme();
 
-    const getSets = (sets: any) => {
-        if (!sets) return [];
-        if (Array.isArray(sets)) return sets;
-        if (typeof sets === 'string') { try { return JSON.parse(sets); } catch { return []; } }
-        return [];
+    const glassCard = {
+        backgroundColor: colors.card,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        ...shadows.sm,
     };
 
-    if (!workout) {
-        return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} className="justify-center items-center">
-                <Text style={{ color: colors.textSecondary }}>Workout not found.</Text>
-                <TouchableOpacity onPress={() => navigation.goBack()} className="mt-4">
-                    <Text className="text-blue-600 font-bold">Go Back</Text>
-                </TouchableOpacity>
-            </SafeAreaView>
-        );
-    }
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    };
+    const totalSets = workout.exercises?.reduce((a: number, e: any) =>
+        a + (Array.isArray(e.sets) ? e.sets.length : 0), 0) || 0;
+    const totalVolume = Math.round(workout.exercises?.reduce((acc: number, e: any) =>
+        acc + (Array.isArray(e.sets) ? e.sets.reduce((s: number, set: any) =>
+            s + ((set.weight || 0) * (set.reps || 0)), 0) : 0), 0) || 0);
+    const duration = workout.startTime && workout.endTime
+        ? Math.round((new Date(workout.endTime).getTime() - new Date(workout.startTime).getTime()) / 60000)
+        : null;
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-            {/* Header */}
-            <View style={{ backgroundColor: colors.card, borderBottomColor: colors.border }} className="p-4 border-b flex-row items-center shadow-sm">
-                <TouchableOpacity
-                    style={{ backgroundColor: colors.cardAlt }}
-                    className="mr-4 p-2 rounded-full"
-                    onPress={() => navigation.goBack()}
-                >
-                    <ArrowLeft size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
-                <View className="flex-1">
-                    <Text style={{ color: colors.text }} className="text-xl font-bold">{workout.name || 'Workout Details'}</Text>
-                    <Text style={{ color: colors.textSecondary }} className="text-xs">{formatDate(workout.endTime)}</Text>
-                </View>
-            </View>
-
-            <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 40 }}>
-                {/* Stats Summary */}
-                <View className="flex-row justify-between mb-6">
-                    <View style={{ backgroundColor: colors.card }} className="p-4 rounded-xl flex-1 mr-2 shadow-sm items-center">
-                        <Dumbbell size={20} color="#2563eb" className="mb-1" />
-                        <Text style={{ color: colors.text }} className="text-lg font-bold">{workout.exercises?.length || 0}</Text>
-                        <Text style={{ color: colors.textSecondary }} className="text-xs text-center">Exercises</Text>
-                    </View>
-                    <View style={{ backgroundColor: colors.card }} className="p-4 rounded-xl flex-1 ml-2 shadow-sm items-center">
-                        <Clock size={20} color="#10b981" className="mb-1" />
-                        <Text style={{ color: colors.text }} className="text-lg font-bold">
-                            {workout.startTime && workout.endTime
-                                ? Math.round((new Date(workout.endTime).getTime() - new Date(workout.startTime).getTime()) / 60000) + 'm'
-                                : '-'}
-                        </Text>
-                        <Text style={{ color: colors.textSecondary }} className="text-xs text-center">Duration</Text>
-                    </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <View className="px-5 pt-3 pb-4">
+                    <TouchableOpacity onPress={() => navigation.goBack()} className="mb-4">
+                        <ArrowLeft size={24} color={colors.text} />
+                    </TouchableOpacity>
+                    <Text style={{ color: colors.text }} className="text-2xl font-bold">{workout.name || 'Workout'}</Text>
+                    <Text style={{ color: colors.textSecondary }} className="text-sm mt-1">
+                        {new Date(workout.date || workout.endTime).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                    </Text>
                 </View>
 
-                {/* Exercises List */}
-                <Text style={{ color: colors.text }} className="text-lg font-bold mb-3">Exercises Performed</Text>
-                {workout.exercises?.map((exercise: any, exIndex: number) => (
-                    <View key={exercise.id || exIndex} style={{ backgroundColor: colors.card }} className="rounded-xl p-4 mb-4 shadow-sm">
-                        <Text style={{ color: colors.text }} className="text-lg font-bold mb-3">{exercise.name}</Text>
-
-                        <View style={{ borderBottomColor: colors.border }} className="flex-row mb-2 border-b pb-2">
-                            <Text style={{ color: colors.textTertiary }} className="w-10 text-xs font-bold uppercase text-center">Set</Text>
-                            <Text style={{ color: colors.textTertiary }} className="flex-1 text-xs font-bold uppercase text-center">kg</Text>
-                            <Text style={{ color: colors.textTertiary }} className="flex-1 text-xs font-bold uppercase text-center">Reps</Text>
+                {/* Stats */}
+                <View className="px-4 flex-row mb-4">
+                    <View style={glassCard} className="flex-1 mx-1 rounded-2xl p-3">
+                        <View style={{ backgroundColor: accent.indigoBg }} className="w-9 h-9 rounded-xl items-center justify-center mb-2">
+                            <Dumbbell size={16} color={accent.indigo} />
                         </View>
-
-                        {getSets(exercise.sets).map((set: any, setIndex: number) => (
-                            <View key={set.id || setIndex} className="flex-row items-center py-2">
-                                <View className="w-10 items-center justify-center">
-                                    <View style={{ backgroundColor: colors.cardAlt }} className="w-6 h-6 rounded-full items-center justify-center">
-                                        <Text style={{ color: colors.textSecondary }} className="text-xs font-bold">{setIndex + 1}</Text>
-                                    </View>
-                                </View>
-                                <Text style={{ color: colors.text }} className="flex-1 text-center font-medium">{set.weight || 0}</Text>
-                                <Text style={{ color: colors.text }} className="flex-1 text-center font-medium">{set.reps || 0}</Text>
-                            </View>
-                        ))}
+                        <Text style={{ color: colors.text }} className="text-xl font-bold">{workout.exercises?.length || 0}</Text>
+                        <Text style={{ color: colors.textTertiary, fontSize: 11 }}>Exercises</Text>
                     </View>
-                ))}
+                    <View style={glassCard} className="flex-1 mx-1 rounded-2xl p-3">
+                        <View style={{ backgroundColor: accent.amberBg }} className="w-9 h-9 rounded-xl items-center justify-center mb-2">
+                            <TrendingUp size={16} color={accent.amber} />
+                        </View>
+                        <Text style={{ color: colors.text }} className="text-xl font-bold">{totalSets}</Text>
+                        <Text style={{ color: colors.textTertiary, fontSize: 11 }}>Total Sets</Text>
+                    </View>
+                    {duration !== null && (
+                        <View style={glassCard} className="flex-1 mx-1 rounded-2xl p-3">
+                            <View style={{ backgroundColor: accent.cyanBg }} className="w-9 h-9 rounded-xl items-center justify-center mb-2">
+                                <Clock size={16} color={accent.cyan} />
+                            </View>
+                            <Text style={{ color: colors.text }} className="text-xl font-bold">{duration}m</Text>
+                            <Text style={{ color: colors.textTertiary, fontSize: 11 }}>Duration</Text>
+                        </View>
+                    )}
+                </View>
+
+                {totalVolume > 0 && (
+                    <View style={glassCard} className="mx-5 rounded-2xl p-4 mb-4 flex-row items-center">
+                        <View style={{ backgroundColor: accent.greenBg }} className="w-11 h-11 rounded-xl items-center justify-center mr-3">
+                            <TrendingUp size={20} color={accent.green} />
+                        </View>
+                        <View className="flex-1">
+                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Total Volume</Text>
+                            <Text style={{ color: colors.text }} className="text-2xl font-bold">{totalVolume.toLocaleString()} kg</Text>
+                        </View>
+                    </View>
+                )}
+
+                {/* Exercises */}
+                <View className="px-5">
+                    <Text style={{ color: colors.text }} className="font-bold text-base mb-3">Exercises</Text>
+                    {workout.exercises?.map((exercise: any, idx: number) => (
+                        <View key={exercise.id || idx} style={glassCard} className="rounded-2xl p-4 mb-3">
+                            <Text style={{ color: colors.text }} className="font-bold text-base mb-2">{exercise.name}</Text>
+                            <View className="flex-row pb-2" style={{ borderBottomWidth: 1, borderBottomColor: colors.borderLight }}>
+                                <Text style={{ color: colors.textTertiary, fontSize: 11, width: 40 }}>SET</Text>
+                                <Text style={{ color: colors.textTertiary, fontSize: 11, flex: 1, textAlign: 'center' }}>WEIGHT</Text>
+                                <Text style={{ color: colors.textTertiary, fontSize: 11, flex: 1, textAlign: 'center' }}>REPS</Text>
+                            </View>
+                            {Array.isArray(exercise.sets) && exercise.sets.map((s: any, i: number) => (
+                                <View key={i} className="flex-row py-2" style={{ borderBottomWidth: i < exercise.sets.length - 1 ? 0.5 : 0, borderBottomColor: colors.borderLight }}>
+                                    <Text style={{ color: colors.textSecondary, width: 40, fontWeight: '700' }}>{i + 1}</Text>
+                                    <Text style={{ color: colors.text, flex: 1, textAlign: 'center', fontWeight: '600' }}>{s.weight || 0} kg</Text>
+                                    <Text style={{ color: colors.text, flex: 1, textAlign: 'center', fontWeight: '600' }}>{s.reps || 0}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    ))}
+                </View>
+
+                <View style={{ height: 100 }} />
             </ScrollView>
         </SafeAreaView>
     );

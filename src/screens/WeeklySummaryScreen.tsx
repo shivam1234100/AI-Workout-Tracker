@@ -1,19 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, TrendingUp, Dumbbell, Clock, Flame, Calendar, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { useTheme, accent, shadows } from '../context/ThemeContext';
 import { API_URL } from '../constants/api';
 import { useAuthStore } from '../store/authStore';
-import { useTheme } from '../context/ThemeContext';
-
-interface WeeklySummaryData {
-    id: string;
-    weekStart: string;
-    weekEnd: string;
-    summary: string;
-    stats: string;
-    createdAt: string;
-}
+import { ArrowLeft, Sparkles, TrendingUp, Dumbbell, Clock, Flame } from 'lucide-react-native';
 
 interface ParsedStats {
     totalWorkouts: number;
@@ -21,176 +12,120 @@ interface ParsedStats {
     totalReps: number;
     totalVolume: number;
     totalDurationMin: number;
-    exercises: Record<string, { count: number; maxWeight: number }>;
+    exercises?: Record<string, { count: number; maxWeight: number }>;
 }
 
 export default function WeeklySummaryScreen({ navigation }: any) {
-    const [currentSummary, setCurrentSummary] = useState<WeeklySummaryData | null>(null);
-    const [pastSummaries, setPastSummaries] = useState<WeeklySummaryData[]>([]);
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-    const [expandedPast, setExpandedPast] = useState<string | null>(null);
-    const { token } = useAuthStore();
     const { isDark, colors } = useTheme();
+    const { token } = useAuthStore();
+    const [isLoading, setIsLoading] = useState(true);
+    const [summary, setSummary] = useState<string>('');
+    const [stats, setStats] = useState<ParsedStats | null>(null);
 
     useEffect(() => {
-        generateCurrentWeekSummary();
-        fetchPastSummaries();
+        loadSummary();
     }, []);
 
-    const generateCurrentWeekSummary = async () => {
-        setIsGenerating(true);
+    const loadSummary = async () => {
+        if (!token) { setIsLoading(false); return; }
+        setIsLoading(true);
         try {
-            const response = await fetch(`${API_URL}/summary/weekly`, {
+            const res = await fetch(`${API_URL}/summary/weekly`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             });
-            if (response.ok) { const data = await response.json(); setCurrentSummary(data); }
-        } catch (error) { console.error('Failed to generate summary:', error); }
-        finally { setIsGenerating(false); }
-    };
-
-    const fetchPastSummaries = async () => {
-        setIsLoading(true);
-        try {
-            const response = await fetch(`${API_URL}/summary/weekly`, { headers: { Authorization: `Bearer ${token}` } });
-            if (response.ok) {
-                const data = await response.json();
-                const now = new Date();
-                const dayOfWeek = now.getDay();
-                const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-                const weekStart = new Date(now);
-                weekStart.setDate(now.getDate() + mondayOffset);
-                weekStart.setHours(0, 0, 0, 0);
-                const past = data.filter((s: WeeklySummaryData) => new Date(s.weekStart).getTime() < weekStart.getTime());
-                setPastSummaries(past);
+            if (res.ok) {
+                const data = await res.json();
+                setSummary(data.summary || '');
+                if (data.stats) {
+                    try { setStats(typeof data.stats === 'string' ? JSON.parse(data.stats) : data.stats); } catch {}
+                }
             }
-        } catch (error) { console.error('Failed to fetch summaries:', error); }
-        finally { setIsLoading(false); }
+        } catch (e) {
+            console.error('Summary load failed:', e);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const onRefresh = useCallback(() => { generateCurrentWeekSummary(); fetchPastSummaries(); }, []);
-    const parseStats = (statsStr: string): ParsedStats | null => { try { return JSON.parse(statsStr); } catch { return null; } };
-    const formatWeekRange = (start: string, end: string) => {
-        const s = new Date(start);
-        const e = new Date(end);
-        return `${s.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} — ${e.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+    const glassCard = {
+        backgroundColor: colors.card,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        ...shadows.sm,
     };
-
-    const StatCard = ({ icon, value, label }: { icon: React.ReactNode; value: string; label: string; color: string }) => (
-        <View style={{ backgroundColor: colors.card }} className="p-4 rounded-2xl flex-1 mx-1 shadow-sm items-center">
-            {icon}
-            <Text style={{ color: colors.text }} className="text-xl font-bold mt-2">{value}</Text>
-            <Text style={{ color: colors.textSecondary }} className="text-xs mt-1">{label}</Text>
-        </View>
-    );
-
-    const stats = currentSummary ? parseStats(currentSummary.stats) : null;
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-            {/* Header */}
-            <View style={{ backgroundColor: colors.card, borderBottomColor: colors.border }} className="p-4 border-b flex-row items-center">
-                <TouchableOpacity onPress={() => navigation.goBack()} className="mr-3">
-                    <ArrowLeft size={24} color={colors.textSecondary} />
-                </TouchableOpacity>
-                <Text style={{ color: colors.text }} className="text-xl font-bold">Weekly Insights</Text>
-            </View>
-
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 40 }}
-                refreshControl={<RefreshControl refreshing={isGenerating} onRefresh={onRefresh} colors={["#2563eb"]} />}
-            >
-                <View className="p-4">
-                    {/* Current Week Header */}
-                    <View className="mb-4">
-                        <Text style={{ color: colors.text }} className="text-lg font-bold">This Week</Text>
-                        {currentSummary && (
-                            <Text style={{ color: colors.textSecondary }} className="text-sm">
-                                {formatWeekRange(currentSummary.weekStart, currentSummary.weekEnd)}
-                            </Text>
-                        )}
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <View className="px-5 pt-3 pb-4">
+                    <TouchableOpacity onPress={() => navigation.goBack()} className="mb-4">
+                        <ArrowLeft size={24} color={colors.text} />
+                    </TouchableOpacity>
+                    <View className="flex-row items-center">
+                        <Sparkles size={22} color={accent.purple} />
+                        <Text style={{ color: colors.text }} className="text-2xl font-bold ml-2">Weekly Summary</Text>
                     </View>
-
-                    {/* Stats Cards */}
-                    {isGenerating && !stats ? (
-                        <View className="h-28 items-center justify-center">
-                            <ActivityIndicator size="large" color="#2563eb" />
-                            <Text style={{ color: colors.textSecondary }} className="mt-3 text-sm">Analyzing your workouts...</Text>
-                        </View>
-                    ) : stats ? (
-                        <>
-                            <View className="flex-row mb-3">
-                                <StatCard icon={<Dumbbell size={22} color="#2563eb" />} value={String(stats.totalWorkouts)} label="Workouts" color="#2563eb" />
-                                <StatCard icon={<Flame size={22} color="#ef4444" />} value={stats.totalVolume > 1000 ? `${(stats.totalVolume / 1000).toFixed(1)}k` : String(stats.totalVolume)} label="Volume (kg)" color="#ef4444" />
-                                <StatCard icon={<Clock size={22} color="#7c3aed" />} value={String(stats.totalDurationMin)} label="Minutes" color="#7c3aed" />
-                            </View>
-                            <View className="flex-row mb-6">
-                                <StatCard icon={<TrendingUp size={22} color="#10b981" />} value={String(stats.totalSets)} label="Total Sets" color="#10b981" />
-                                <StatCard icon={<Calendar size={22} color="#f59e0b" />} value={String(stats.totalReps)} label="Total Reps" color="#f59e0b" />
-                                <View className="flex-1 mx-1" />
-                            </View>
-                        </>
-                    ) : (
-                        <View style={{ backgroundColor: colors.card, borderColor: colors.border }} className="p-6 rounded-xl items-center border border-dashed mb-6">
-                            <Text style={{ color: colors.textTertiary }} className="text-center">No workouts this week yet.{'\n'}Start training to see your insights!</Text>
-                        </View>
-                    )}
-
-                    {/* AI Summary Card */}
-                    {currentSummary && (
-                        <View style={{ backgroundColor: colors.card, borderColor: colors.border }} className="rounded-2xl p-5 mb-8 shadow-sm border">
-                            <View className="flex-row items-center mb-3">
-                                <Text style={{ color: colors.text }} className="text-lg font-bold">🤖 AI Coach Analysis</Text>
-                            </View>
-                            <Text style={{ color: colors.textSecondary }} className="leading-6">{currentSummary.summary}</Text>
-                        </View>
-                    )}
-
-                    {/* Past Summaries */}
-                    {pastSummaries.length > 0 && (
-                        <>
-                            <Text style={{ color: colors.text }} className="text-lg font-bold mb-4">Past Weeks</Text>
-                            {pastSummaries.map((summary) => {
-                                const pastStats = parseStats(summary.stats);
-                                const isExpanded = expandedPast === summary.id;
-                                return (
-                                    <TouchableOpacity
-                                        key={summary.id}
-                                        style={{ backgroundColor: colors.card }}
-                                        className="rounded-xl p-4 mb-3 shadow-sm"
-                                        onPress={() => setExpandedPast(isExpanded ? null : summary.id)}
-                                        activeOpacity={0.7}
-                                    >
-                                        <View className="flex-row items-center justify-between">
-                                            <View>
-                                                <Text style={{ color: colors.text }} className="font-bold">{formatWeekRange(summary.weekStart, summary.weekEnd)}</Text>
-                                                {pastStats && (
-                                                    <Text style={{ color: colors.textSecondary }} className="text-sm mt-1">
-                                                        {pastStats.totalWorkouts} workouts • {pastStats.totalVolume.toLocaleString()}kg volume
-                                                    </Text>
-                                                )}
-                                            </View>
-                                            {isExpanded ? <ChevronUp size={20} color="#9ca3af" /> : <ChevronDown size={20} color="#9ca3af" />}
-                                        </View>
-                                        {isExpanded && (
-                                            <View style={{ borderTopColor: colors.border }} className="mt-4 pt-3 border-t">
-                                                <Text style={{ color: colors.textSecondary }} className="leading-6">{summary.summary}</Text>
-                                            </View>
-                                        )}
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </>
-                    )}
-
-                    {isLoading && (
-                        <View className="items-center py-4">
-                            <ActivityIndicator size="small" color="#2563eb" />
-                        </View>
-                    )}
+                    <Text style={{ color: colors.textSecondary }} className="text-sm mt-1">
+                        AI-powered analysis of your training
+                    </Text>
                 </View>
+
+                {isLoading ? (
+                    <View className="items-center justify-center py-20">
+                        <ActivityIndicator size="large" color={accent.purple} />
+                        <Text style={{ color: colors.textSecondary }} className="text-sm mt-3">Generating your summary...</Text>
+                    </View>
+                ) : (
+                    <>
+                        {stats && (
+                            <View className="px-4 flex-row flex-wrap mb-3">
+                                <View style={glassCard} className="rounded-2xl p-3 m-1" style={{ width: '47%' }}>
+                                    <View style={{ backgroundColor: accent.indigoBg }} className="w-9 h-9 rounded-xl items-center justify-center mb-2">
+                                        <Dumbbell size={16} color={accent.indigo} />
+                                    </View>
+                                    <Text style={{ color: colors.text }} className="text-xl font-bold">{stats.totalWorkouts}</Text>
+                                    <Text style={{ color: colors.textTertiary, fontSize: 11 }}>Workouts</Text>
+                                </View>
+                                <View style={glassCard} className="rounded-2xl p-3 m-1" style={{ width: '47%' }}>
+                                    <View style={{ backgroundColor: accent.amberBg }} className="w-9 h-9 rounded-xl items-center justify-center mb-2">
+                                        <TrendingUp size={16} color={accent.amber} />
+                                    </View>
+                                    <Text style={{ color: colors.text }} className="text-xl font-bold">{stats.totalSets}</Text>
+                                    <Text style={{ color: colors.textTertiary, fontSize: 11 }}>Sets</Text>
+                                </View>
+                                <View style={glassCard} className="rounded-2xl p-3 m-1" style={{ width: '47%' }}>
+                                    <View style={{ backgroundColor: accent.greenBg }} className="w-9 h-9 rounded-xl items-center justify-center mb-2">
+                                        <Flame size={16} color={accent.green} />
+                                    </View>
+                                    <Text style={{ color: colors.text }} className="text-xl font-bold">{Math.round(stats.totalVolume).toLocaleString()}</Text>
+                                    <Text style={{ color: colors.textTertiary, fontSize: 11 }}>Volume (kg)</Text>
+                                </View>
+                                <View style={glassCard} className="rounded-2xl p-3 m-1" style={{ width: '47%' }}>
+                                    <View style={{ backgroundColor: accent.cyanBg }} className="w-9 h-9 rounded-xl items-center justify-center mb-2">
+                                        <Clock size={16} color={accent.cyan} />
+                                    </View>
+                                    <Text style={{ color: colors.text }} className="text-xl font-bold">{Math.round(stats.totalDurationMin)}m</Text>
+                                    <Text style={{ color: colors.textTertiary, fontSize: 11 }}>Duration</Text>
+                                </View>
+                            </View>
+                        )}
+
+                        {summary ? (
+                            <View style={glassCard} className="mx-5 rounded-2xl p-5">
+                                <Text style={{ color: colors.text, lineHeight: 22, fontSize: 14 }}>{summary}</Text>
+                            </View>
+                        ) : (
+                            <View style={glassCard} className="mx-5 rounded-2xl p-6 items-center">
+                                <Text style={{ color: colors.textSecondary }} className="text-sm text-center">
+                                    Complete some workouts this week to see your summary.
+                                </Text>
+                            </View>
+                        )}
+                    </>
+                )}
+
+                <View style={{ height: 80 }} />
             </ScrollView>
         </SafeAreaView>
     );

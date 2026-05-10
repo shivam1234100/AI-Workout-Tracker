@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { User as UserIcon, Ruler, Weight, Save, LogOut, ChevronDown, Sun, Moon, Smartphone } from 'lucide-react-native';
+import { User as UserIcon, Ruler, Weight, Save, LogOut, ChevronDown, Sun, Moon, Bell, BellOff, Zap, Dumbbell, Leaf, FlameKindling } from 'lucide-react-native';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { useTheme } from '../context/ThemeContext';
+import { useNotificationStore } from '../store/notificationStore';
+import {
+  requestNotificationPermissions,
+  scheduleAllNotifications,
+  sendTestNotification,
+} from '../lib/notifications';
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
 
@@ -12,6 +18,7 @@ export default function ProfileScreen({ navigation }: any) {
     const { signOut, user, updateProfile, fetchProfile } = useAuthStore();
     const { colorScheme: themePreference, setColorScheme: setThemePreference } = useThemeStore();
     const { isDark, colors } = useTheme();
+    const { prefs, permissionGranted, setPrefs, setPermissionGranted } = useNotificationStore();
 
     const [height, setHeight] = useState(user?.height?.toString() || '');
     const [weight, setWeight] = useState(user?.weight?.toString() || '');
@@ -42,6 +49,48 @@ export default function ProfileScreen({ navigation }: any) {
             gender !== (user?.gender || '');
         setHasChanges(changed);
     }, [name, height, weight, gender, user]);
+
+    const handleNotificationToggle = async (enabled: boolean) => {
+        if (enabled && !permissionGranted) {
+            const granted = await requestNotificationPermissions();
+            setPermissionGranted(granted);
+            if (!granted) {
+                Alert.alert(
+                    'Permission Required',
+                    'Please enable notifications in your device settings to receive workout reminders and tips.',
+                );
+                return;
+            }
+        }
+        const newPrefs = { ...prefs, enabled };
+        setPrefs({ enabled });
+        await scheduleAllNotifications(newPrefs);
+    };
+
+    const handlePrefToggle = async (key: keyof typeof prefs, value: boolean) => {
+        const newPrefs = { ...prefs, [key]: value };
+        setPrefs({ [key]: value });
+        if (prefs.enabled && permissionGranted) {
+            await scheduleAllNotifications(newPrefs);
+        }
+    };
+
+    const handleReminderTimeChange = async (time: string) => {
+        const newPrefs = { ...prefs, reminderTime: time };
+        setPrefs({ reminderTime: time });
+        if (prefs.enabled && permissionGranted) {
+            await scheduleAllNotifications(newPrefs);
+        }
+    };
+
+    const handleTestNotification = async () => {
+        if (!permissionGranted) {
+            Alert.alert('Permission Required', 'Enable notifications first to test them.');
+            return;
+        }
+        await sendTestNotification();
+        Alert.alert('Sent!', 'A test notification is on its way.');
+    };
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -231,6 +280,104 @@ export default function ProfileScreen({ navigation }: any) {
                             );
                         })}
                     </View>
+                </View>
+
+                {/* Notifications Card */}
+                <View style={{ backgroundColor: colors.card }} className="rounded-2xl p-5 mb-4 shadow-sm">
+                    {/* Header row */}
+                    <View className="flex-row items-center justify-between mb-1">
+                        <View className="flex-row items-center">
+                            {prefs.enabled
+                                ? <Bell size={20} color="#2563eb" />
+                                : <BellOff size={20} color={colors.textSecondary} />
+                            }
+                            <Text style={{ color: colors.text }} className="text-lg font-bold ml-2">Notifications</Text>
+                        </View>
+                        <Switch
+                            value={prefs.enabled}
+                            onValueChange={handleNotificationToggle}
+                            trackColor={{ false: isDark ? '#374151' : '#d1d5db', true: '#2563eb' }}
+                            thumbColor="#ffffff"
+                        />
+                    </View>
+                    <Text style={{ color: colors.textSecondary }} className="text-xs mb-4">
+                        Daily motivation, workout reminders, health facts & diet tips.
+                    </Text>
+
+                    {prefs.enabled && (
+                        <>
+                            {/* Sub-toggles */}
+                            {[
+                                { key: 'motivation' as const, label: 'Motivation Boosts', sublabel: '8:00 AM & 5:30 PM', Icon: Zap, color: '#f59e0b' },
+                                { key: 'workoutReminder' as const, label: 'Workout Reminder', sublabel: `Daily at ${prefs.reminderTime}`, Icon: Dumbbell, color: '#2563eb' },
+                                { key: 'quirkyFacts' as const, label: 'Quirky Fitness Facts', sublabel: '12:15 PM', Icon: FlameKindling, color: '#ef4444' },
+                                { key: 'dietTips' as const, label: 'Diet & Nutrition Tips', sublabel: '7:00 PM', Icon: Leaf, color: '#22c55e' },
+                            ].map(({ key, label, sublabel, Icon, color }) => (
+                                <View
+                                    key={key}
+                                    style={{ borderTopColor: colors.border }}
+                                    className="flex-row items-center justify-between py-3 border-t"
+                                >
+                                    <View className="flex-row items-center flex-1 mr-3">
+                                        <View style={{ backgroundColor: `${color}20` }} className="w-9 h-9 rounded-xl items-center justify-center mr-3">
+                                            <Icon size={18} color={color} />
+                                        </View>
+                                        <View className="flex-1">
+                                            <Text style={{ color: colors.text }} className="text-sm font-medium">{label}</Text>
+                                            <Text style={{ color: colors.textSecondary }} className="text-xs mt-0.5">{sublabel}</Text>
+                                        </View>
+                                    </View>
+                                    <Switch
+                                        value={prefs[key] as boolean}
+                                        onValueChange={(v) => handlePrefToggle(key, v)}
+                                        trackColor={{ false: isDark ? '#374151' : '#d1d5db', true: color }}
+                                        thumbColor="#ffffff"
+                                    />
+                                </View>
+                            ))}
+
+                            {/* Reminder time picker */}
+                            {prefs.workoutReminder && (
+                                <View style={{ borderTopColor: colors.border }} className="pt-3 border-t mt-1">
+                                    <Text style={{ color: colors.textSecondary }} className="text-xs font-medium mb-2">Workout Reminder Time</Text>
+                                    <View className="flex-row flex-wrap">
+                                        {['06:00', '07:00', '08:00', '12:00', '17:00', '18:00', '19:00', '20:00'].map((t) => {
+                                            const isActive = prefs.reminderTime === t;
+                                            const [h] = t.split(':').map(Number);
+                                            const label = h < 12 ? `${h === 0 ? 12 : h} AM` : `${h === 12 ? 12 : h - 12} PM`;
+                                            return (
+                                                <TouchableOpacity
+                                                    key={t}
+                                                    style={{
+                                                        backgroundColor: isActive ? '#2563eb' : colors.inputBg,
+                                                        marginRight: 8,
+                                                        marginBottom: 8,
+                                                    }}
+                                                    className="px-3 py-1.5 rounded-lg"
+                                                    onPress={() => handleReminderTimeChange(t)}
+                                                >
+                                                    <Text style={{ color: isActive ? '#ffffff' : colors.textSecondary }} className="text-xs font-medium">
+                                                        {label}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            );
+                                        })}
+                                    </View>
+                                </View>
+                            )}
+
+                            {/* Test notification button */}
+                            <TouchableOpacity
+                                style={{ borderTopColor: colors.border, marginTop: 4 }}
+                                className="flex-row items-center justify-center py-3 border-t"
+                                onPress={handleTestNotification}
+                                activeOpacity={0.7}
+                            >
+                                <Bell size={15} color="#2563eb" />
+                                <Text className="text-blue-600 text-sm font-medium ml-2">Send Test Notification</Text>
+                            </TouchableOpacity>
+                        </>
+                    )}
                 </View>
 
                 {/* Save Button */}

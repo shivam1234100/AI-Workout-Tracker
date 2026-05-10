@@ -5,6 +5,7 @@ import authRoutes from './routes/auth';
 import workoutRoutes from './routes/workout';
 import aiRoutes from './routes/ai';
 import summaryRoutes from './routes/summary';
+import programRoutes from './routes/program';
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use('/auth', authRoutes);
 app.use('/workouts', workoutRoutes);
 app.use('/ai', aiRoutes);
 app.use('/summary', summaryRoutes);
+app.use('/programs', programRoutes);
 
 app.get('/', (req, res) => {
     res.send('AI Workout Tracker API is running');

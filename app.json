@@ -13,7 +13,10 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,6 +26,16 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#2563eb",
+          "sounds": []
+        }
+      ]
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
     }

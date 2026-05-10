@@ -70,9 +70,12 @@ router.post('/', authenticateToken, async (req: any, res) => {
 // Delete workout
 router.delete('/:id', authenticateToken, async (req: any, res) => {
     try {
-        await prisma.workout.delete({
+        const result = await prisma.workout.deleteMany({
             where: { id: req.params.id, userId: req.user.id }
         });
+        if (result.count === 0) {
+            return res.status(404).json({ error: 'Workout not found' });
+        }
         res.json({ message: 'Workout deleted' });
     } catch (error) {
         res.status(500).json({ error: 'Error deleting workout' });
