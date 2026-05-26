@@ -153,8 +153,11 @@ export const useAuthStore = create<AuthState>()(
                         const user = await res.json();
                         set({ user });
                     }
-                } catch (e) {
-                    console.error('fetchProfile failed:', e);
+                } catch (e: any) {
+                    const msg = e?.message || '';
+                    if (!msg.includes('Aborted') && !msg.includes('Network request failed')) {
+                        console.error('fetchProfile failed:', e);
+                    }
                 }
             },
         }),

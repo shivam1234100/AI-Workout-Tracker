@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, Platform } from 'react-native';
 
-import { Home, Dumbbell, PlayCircle, History, BrainCircuit, User, BookOpen } from 'lucide-react-native';
+import { Home, Dumbbell, PlayCircle, History, BrainCircuit, User, BookOpen, Heart } from 'lucide-react-native';
 import { useAuthStore } from '../store/authStore';
 import { useTheme, accent } from '../context/ThemeContext';
 
@@ -22,6 +22,9 @@ import WeeklySummaryScreen from '../screens/WeeklySummaryScreen';
 import ProgramsScreen from '../screens/ProgramsScreen';
 import ProgramDetailScreen from '../screens/ProgramDetailScreen';
 import CreateProgramScreen from '../screens/CreateProgramScreen';
+import HealthDashboardScreen from '../screens/HealthDashboardScreen';
+import StepsScreen from '../screens/StepsScreen';
+import CalorieScreen from '../screens/CalorieScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -125,6 +128,16 @@ function MainTabs() {
                 }}
             />
             <Tab.Screen
+                name="Health"
+                component={HealthDashboardScreen}
+                options={{
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <TabIcon focused={focused}><Heart color={color} size={22} /></TabIcon>
+                    ),
+                    tabBarLabel: 'Health'
+                }}
+            />
+            <Tab.Screen
                 name="Programs"
                 component={ProgramsScreen}
                 options={{
@@ -181,6 +194,8 @@ export default function RootNavigator() {
                     <Stack.Screen name="WeeklySummary" component={WeeklySummaryScreen} />
                     <Stack.Screen name="ProgramDetail" component={ProgramDetailScreen} />
                     <Stack.Screen name="CreateProgram" component={CreateProgramScreen} />
+                    <Stack.Screen name="StepsDetail" component={StepsScreen} />
+                    <Stack.Screen name="CalorieDetail" component={CalorieScreen} />
                 </>
             ) : (
                 <Stack.Screen name="Auth" component={AuthStack} />

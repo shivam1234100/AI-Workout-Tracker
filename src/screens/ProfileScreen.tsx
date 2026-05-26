@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { User as UserIcon, Ruler, Weight, Save, LogOut, ChevronDown, Sun, Moon, Bell, BellOff, Zap, Dumbbell, Leaf, FlameKindling } from 'lucide-react-native';
+import { User as UserIcon, Ruler, Weight, Save, LogOut, ChevronDown, Sun, Moon, Bell, BellOff, Zap, Dumbbell, Leaf, FlameKindling, Plus, X, ShieldAlert, Bone, HeartPulse, AlertTriangle, FileText } from 'lucide-react-native';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { useTheme } from '../context/ThemeContext';
 import { useNotificationStore } from '../store/notificationStore';
+import { useMedicalStore, MedicalCondition } from '../store/medicalStore';
 import {
   requestNotificationPermissions,
   scheduleAllNotifications,
@@ -15,10 +16,12 @@ import {
 const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
 
 export default function ProfileScreen({ navigation }: any) {
-    const { signOut, user, updateProfile, fetchProfile } = useAuthStore();
-    const { colorScheme: themePreference, setColorScheme: setThemePreference } = useThemeStore();
+    const { logout: signOut, user, updateProfile, fetchProfile } = useAuthStore();
+    const { theme: themePreference, setTheme: setThemePreference } = useThemeStore();
     const { isDark, colors } = useTheme();
     const { prefs, permissionGranted, setPrefs, setPermissionGranted } = useNotificationStore();
+
+    const { conditions, additionalNotes, addCondition, removeCondition, setAdditionalNotes } = useMedicalStore();
 
     const [height, setHeight] = useState(user?.height?.toString() || '');
     const [weight, setWeight] = useState(user?.weight?.toString() || '');
@@ -27,6 +30,10 @@ export default function ProfileScreen({ navigation }: any) {
     const [isSaving, setIsSaving] = useState(false);
     const [showGenderPicker, setShowGenderPicker] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
+
+    // Medical condition input state
+    const [conditionInput, setConditionInput] = useState('');
+    const [conditionType, setConditionType] = useState<MedicalCondition['type']>('injury');
 
     useEffect(() => {
         fetchProfile();
@@ -251,6 +258,168 @@ export default function ProfileScreen({ navigation }: any) {
                         </View>
                     </View>
                 )}
+
+                {/* Medical Conditions Card */}
+                <View style={{ backgroundColor: colors.card }} className="rounded-2xl p-5 mb-4 shadow-sm">
+                    <View className="flex-row items-center mb-1">
+                        <ShieldAlert size={20} color="#ef4444" />
+                        <Text style={{ color: colors.text }} className="text-lg font-bold ml-2">Medical & Injuries</Text>
+                    </View>
+                    <Text style={{ color: colors.textSecondary }} className="text-xs mb-4">
+                        Add any injuries, health conditions, or allergies. The AI Coach will account for these when suggesting workouts and exercises.
+                    </Text>
+
+                    {/* Condition type selector */}
+                    <View className="flex-row mb-3">
+                        {([
+                            { type: 'injury' as const, label: 'Injury', Icon: Bone, color: '#f59e0b' },
+                            { type: 'condition' as const, label: 'Condition', Icon: HeartPulse, color: '#ef4444' },
+                            { type: 'allergy' as const, label: 'Allergy', Icon: AlertTriangle, color: '#8b5cf6' },
+                            { type: 'other' as const, label: 'Other', Icon: FileText, color: '#6b7280' },
+                        ]).map(({ type, label, Icon, color }) => {
+                            const isActive = conditionType === type;
+                            return (
+                                <TouchableOpacity
+                                    key={type}
+                                    onPress={() => setConditionType(type)}
+                                    activeOpacity={0.7}
+                                    className="mr-2 px-3 py-1.5 rounded-lg flex-row items-center"
+                                    style={{
+                                        backgroundColor: isActive ? color + '20' : colors.inputBg,
+                                        borderWidth: 1,
+                                        borderColor: isActive ? color + '50' : 'transparent',
+                                    }}
+                                >
+                                    <Icon size={12} color={isActive ? color : colors.textTertiary} />
+                                    <Text style={{ color: isActive ? color : colors.textTertiary, fontSize: 11, fontWeight: '600', marginLeft: 4 }}>{label}</Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+
+                    {/* Input row */}
+                    <View className="flex-row items-center mb-3">
+                        <View style={{ backgroundColor: colors.inputBg, flex: 1, borderRadius: 12 }} className="flex-row items-center px-3 py-2.5 mr-2">
+                            <TextInput
+                                style={{ color: colors.text, flex: 1, fontSize: 13 }}
+                                placeholder={
+                                    conditionType === 'injury' ? 'e.g. Left knee ACL tear, Lower back pain...'
+                                    : conditionType === 'condition' ? 'e.g. Asthma, Diabetes, High BP...'
+                                    : conditionType === 'allergy' ? 'e.g. Lactose intolerant, Nut allergy...'
+                                    : 'e.g. Pregnancy, Post-surgery recovery...'
+                                }
+                                placeholderTextColor={colors.textTertiary}
+                                value={conditionInput}
+                                onChangeText={setConditionInput}
+                                onSubmitEditing={() => {
+                                    if (conditionInput.trim()) {
+                                        addCondition(conditionInput, conditionType);
+                                        setConditionInput('');
+                                    }
+                                }}
+                                returnKeyType="done"
+                            />
+                        </View>
+                        <TouchableOpacity
+                            onPress={() => {
+                                if (conditionInput.trim()) {
+                                    addCondition(conditionInput, conditionType);
+                                    setConditionInput('');
+                                }
+                            }}
+                            activeOpacity={0.7}
+                            style={{
+                                backgroundColor: conditionInput.trim() ? '#2563eb' : (isDark ? '#374151' : '#e5e7eb'),
+                                width: 40, height: 40, borderRadius: 12,
+                                alignItems: 'center', justifyContent: 'center',
+                            }}
+                        >
+                            <Plus size={18} color={conditionInput.trim() ? 'white' : colors.textTertiary} />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Quick-add chips */}
+                    {conditions.length === 0 && (
+                        <View className="mb-3">
+                            <Text style={{ color: colors.textTertiary, fontSize: 11, marginBottom: 6 }}>Quick add:</Text>
+                            <View className="flex-row flex-wrap">
+                                {['Knee pain', 'Lower back injury', 'Shoulder impingement', 'Wrist pain', 'Asthma', 'High blood pressure'].map((item) => (
+                                    <TouchableOpacity
+                                        key={item}
+                                        onPress={() => {
+                                            const type = ['Asthma', 'High blood pressure'].includes(item) ? 'condition' : 'injury';
+                                            addCondition(item, type as MedicalCondition['type']);
+                                        }}
+                                        activeOpacity={0.7}
+                                        style={{ backgroundColor: colors.inputBg, borderRadius: 8, marginRight: 6, marginBottom: 6, paddingHorizontal: 10, paddingVertical: 5 }}
+                                    >
+                                        <Text style={{ color: colors.textSecondary, fontSize: 11 }}>+ {item}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Listed conditions */}
+                    {conditions.length > 0 && (
+                        <View className="mb-3">
+                            {conditions.map((c) => {
+                                const typeConfig = {
+                                    injury: { color: '#f59e0b', Icon: Bone, label: 'Injury' },
+                                    condition: { color: '#ef4444', Icon: HeartPulse, label: 'Condition' },
+                                    allergy: { color: '#8b5cf6', Icon: AlertTriangle, label: 'Allergy' },
+                                    other: { color: '#6b7280', Icon: FileText, label: 'Other' },
+                                }[c.type];
+                                return (
+                                    <View
+                                        key={c.id}
+                                        className="flex-row items-center py-2.5 px-3 rounded-xl mb-2"
+                                        style={{ backgroundColor: typeConfig.color + '10', borderWidth: 1, borderColor: typeConfig.color + '25' }}
+                                    >
+                                        <View style={{ backgroundColor: typeConfig.color + '20', width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                                            <typeConfig.Icon size={14} color={typeConfig.color} />
+                                        </View>
+                                        <View className="flex-1">
+                                            <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>{c.text}</Text>
+                                            <Text style={{ color: typeConfig.color, fontSize: 10, fontWeight: '500' }}>{typeConfig.label}</Text>
+                                        </View>
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                Alert.alert('Remove', `Remove "${c.text}"?`, [
+                                                    { text: 'Cancel', style: 'cancel' },
+                                                    { text: 'Remove', style: 'destructive', onPress: () => removeCondition(c.id) },
+                                                ]);
+                                            }}
+                                            activeOpacity={0.7}
+                                            style={{ padding: 4 }}
+                                        >
+                                            <X size={16} color={colors.textTertiary} />
+                                        </TouchableOpacity>
+                                    </View>
+                                );
+                            })}
+                        </View>
+                    )}
+
+                    {/* Additional notes */}
+                    <Text style={{ color: colors.textSecondary }} className="text-xs font-medium mb-1.5">Additional Notes (optional)</Text>
+                    <TextInput
+                        style={{
+                            color: colors.text,
+                            backgroundColor: colors.inputBg,
+                            borderRadius: 12,
+                            padding: 12,
+                            fontSize: 13,
+                            minHeight: 60,
+                            textAlignVertical: 'top',
+                        }}
+                        placeholder="Any extra details the AI should know (e.g. 'Doctor said avoid heavy squats for 3 months')"
+                        placeholderTextColor={colors.textTertiary}
+                        value={additionalNotes}
+                        onChangeText={setAdditionalNotes}
+                        multiline
+                    />
+                </View>
 
                 {/* Theme Selector Card */}
                 <View style={{ backgroundColor: colors.card }} className="rounded-2xl p-5 mb-4 shadow-sm">

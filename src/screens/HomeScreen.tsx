@@ -6,7 +6,8 @@ import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { useContentStore } from '../store/contentStore';
 import CircularProgress from '../components/CircularProgress';
-import { PlayCircle, TrendingUp, Flame, Dumbbell, Sparkles, Calendar, BookOpen, ChevronRight, BarChart3 } from 'lucide-react-native';
+import { PlayCircle, TrendingUp, Flame, Dumbbell, Sparkles, Calendar, BookOpen, ChevronRight, BarChart3, Footprints, Heart } from 'lucide-react-native';
+import { useHealthStore } from '../store/healthStore';
 
 const WEEKLY_GOAL = 5;
 
@@ -163,6 +164,48 @@ export default function HomeScreen({ navigation }: any) {
                     <View className="flex-1">
                         <Text style={{ color: colors.textSecondary }} className="text-xs">Total Volume</Text>
                         <Text style={{ color: colors.text }} className="text-xl font-bold">{totalVolume.toLocaleString()} kg</Text>
+                    </View>
+                </View>
+
+                {/* Health Snapshot */}
+                <View className="px-5 mt-5">
+                    <View className="flex-row items-center justify-between mb-3">
+                        <Text style={{ color: colors.text }} className="font-bold text-base">Health</Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('Health')}>
+                            <Text style={{ color: accent.green }} className="text-xs font-semibold">See all</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View className="flex-row">
+                        <TouchableOpacity
+                            style={glassCard}
+                            className="flex-1 rounded-2xl p-4 mr-2"
+                            onPress={() => navigation.navigate('StepsDetail')}
+                            activeOpacity={0.7}
+                        >
+                            <View style={{ backgroundColor: '#ff6b3520' }} className="w-9 h-9 rounded-xl items-center justify-center mb-2">
+                                <Footprints size={16} color="#ff6b35" />
+                            </View>
+                            <Text style={{ color: colors.text }} className="text-xl font-bold">
+                                {useHealthStore.getState().todaySteps.toLocaleString()}
+                            </Text>
+                            <Text style={{ color: colors.textTertiary }} className="text-xs">Steps Today</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={glassCard}
+                            className="flex-1 rounded-2xl p-4 ml-2"
+                            onPress={() => navigation.navigate('CalorieDetail')}
+                            activeOpacity={0.7}
+                        >
+                            <View style={{ backgroundColor: '#FF2D5520' }} className="w-9 h-9 rounded-xl items-center justify-center mb-2">
+                                <Heart size={16} color="#FF2D55" />
+                            </View>
+                            <Text style={{ color: colors.text }} className="text-xl font-bold">
+                                {useHealthStore.getState().todayCalories.active}
+                            </Text>
+                            <Text style={{ color: colors.textTertiary }} className="text-xs">Active kcal</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
 

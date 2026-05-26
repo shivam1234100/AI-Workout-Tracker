@@ -102,8 +102,11 @@ export const useProgramStore = create<ProgramState>()(
                         const data = await res.json();
                         set({ userPrograms: data });
                     }
-                } catch (error) {
-                    console.error('Failed to fetch programs:', error);
+                } catch (error: any) {
+                    const msg = error?.message || '';
+                    if (!msg.includes('Aborted') && !msg.includes('Network request failed')) {
+                        console.error('Failed to fetch programs:', error);
+                    }
                 } finally {
                     set({ isLoading: false });
                 }

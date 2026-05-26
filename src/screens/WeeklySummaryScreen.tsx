@@ -41,8 +41,11 @@ export default function WeeklySummaryScreen({ navigation }: any) {
                     try { setStats(typeof data.stats === 'string' ? JSON.parse(data.stats) : data.stats); } catch {}
                 }
             }
-        } catch (e) {
-            console.error('Summary load failed:', e);
+        } catch (e: any) {
+            const msg = e?.message || '';
+            if (!msg.includes('Aborted') && !msg.includes('Network request failed')) {
+                console.error('Summary load failed:', e);
+            }
         } finally {
             setIsLoading(false);
         }

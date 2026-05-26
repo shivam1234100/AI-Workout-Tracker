@@ -789,7 +789,7 @@ async function callClaude(systemPrompt: string, messages: any[]): Promise<string
             'content-type': 'application/json',
         },
         body: JSON.stringify({
-            model: 'claude-3-5-sonnet-20241022',
+            model: 'claude-sonnet-4-20250514',
             max_tokens: 500,
             system: systemPrompt,
             messages: userMessages,
@@ -813,7 +813,7 @@ async function callGemini(systemPrompt: string, messages: any[]): Promise<string
         }));
 
     const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
         {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
@@ -829,9 +829,35 @@ async function callGemini(systemPrompt: string, messages: any[]): Promise<string
     return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
 }
 
+// Helper: call DeepSeek API (OpenAI-compatible)
+async function callDeepSeek(systemPrompt: string, messages: any[]): Promise<string> {
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    if (!apiKey) throw new Error('DeepSeek API key not configured');
+
+    const res = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                ...messages.filter(m => m.role !== 'system'),
+            ],
+            max_tokens: 500,
+            temperature: 0.7,
+        }),
+    });
+    if (!res.ok) throw new Error(`DeepSeek API error: ${res.status}`);
+    const data: any = await res.json();
+    return data.choices?.[0]?.message?.content || 'No response from DeepSeek';
+}
+
 router.post('/chat', authenticateToken, async (req: any, res) => {
     try {
-        const { message, model = 'openai' } = req.body;
+        const { message, model = 'openai', healthContext } = req.body;
         const userId = req.user.id;
 
         if (!message || typeof message !== 'string') {
@@ -893,25 +919,69 @@ router.post('/chat', authenticateToken, async (req: any, res) => {
             if (parts.length > 0) bodyMetrics = '\nUSER\'S BODY METRICS:\n' + parts.join('\n');
         }
 
-        // 6. Build the personalized system prompt
-        const systemPrompt = `You are a personalized AI fitness coach named "AI Coach". You have access to this specific user's real workout data and body metrics. Use it to give specific, data-driven, personalized advice.
+        // 6. Build health data context from client
+        let healthData = '';
+        if (healthContext) {
+            const hParts: string[] = [];
+            if (healthContext.todaySteps !== undefined) hParts.push(`Steps today: ${healthContext.todaySteps} / ${healthContext.stepGoal || 10000} goal`);
+            if (healthContext.todayCalories) {
+                hParts.push(`Active calories today: ${healthContext.todayCalories.active || 0} kcal (goal: ${healthContext.calorieGoal || 500})`);
+                hParts.push(`Exercise time today: ${healthContext.todayCalories.exercise || 0} min (goal: ${healthContext.exerciseGoal || 30} min)`);
+                hParts.push(`Stand hours: ${healthContext.todayCalories.stand || 0} hr`);
+                hParts.push(`Resting energy today: ${healthContext.todayCalories.resting || 0} kcal`);
+            }
+            if (healthContext.avgSteps7d) hParts.push(`7-day average steps: ${healthContext.avgSteps7d}`);
+            if (healthContext.avgCalories7d) hParts.push(`7-day average active calories: ${healthContext.avgCalories7d}`);
+            if (hParts.length > 0) healthData = '\nUSER\'S HEALTH & ACTIVITY DATA (from phone sensors):\n' + hParts.join('\n');
+
+            // Medical conditions & injuries
+            if (healthContext.medicalConditions && healthContext.medicalConditions.length > 0) {
+                const medParts: string[] = [];
+                const injuries = healthContext.medicalConditions.filter((c: any) => c.type === 'injury');
+                const conditions = healthContext.medicalConditions.filter((c: any) => c.type === 'condition');
+                const allergies = healthContext.medicalConditions.filter((c: any) => c.type === 'allergy');
+                const other = healthContext.medicalConditions.filter((c: any) => c.type === 'other');
+
+                if (injuries.length > 0) medParts.push('INJURIES: ' + injuries.map((c: any) => c.text).join(', '));
+                if (conditions.length > 0) medParts.push('HEALTH CONDITIONS: ' + conditions.map((c: any) => c.text).join(', '));
+                if (allergies.length > 0) medParts.push('ALLERGIES/INTOLERANCES: ' + allergies.map((c: any) => c.text).join(', '));
+                if (other.length > 0) medParts.push('OTHER: ' + other.map((c: any) => c.text).join(', '));
+
+                healthData += '\n\n⚠️ USER\'S MEDICAL CONDITIONS & INJURIES (CRITICAL — must account for these):\n' + medParts.join('\n');
+            }
+            if (healthContext.medicalNotes) {
+                healthData += '\nAdditional medical notes from user: ' + healthContext.medicalNotes;
+            }
+        }
+
+        // Build the personalized system prompt
+        const systemPrompt = `You are a personalized AI fitness coach named "AI Coach". You have access to this specific user's real workout data, body metrics, and live health/activity data from their phone. Use ALL of this data to give specific, data-driven, personalized advice.
 
 USER'S TRAINING PROFILE:
 ${userProfile}
 ${bodyMetrics}
+${healthData}
 
 INSTRUCTIONS:
 - Reference their actual exercises, weights, and rep counts when relevant
 - Use their body metrics (height, weight, gender, BMI) to personalize nutrition and training advice
+- Reference their step count, active calories, and exercise time when relevant (especially for questions about activity, cardio, or daily movement)
 - Calculate specific calorie and protein targets based on their weight and goals
 - Notice and comment on trends (improving/plateauing/declining performance)
 - Suggest progressive overload based on their recent numbers (e.g., "try 72.5kg next time")
+- If they ask about steps, calories, or activity — use the real health data provided
 - Be encouraging, supportive, but data-driven
 - If they ask what to train, consider what they trained recently and suggest something different
 - Keep responses concise (2-4 paragraphs max) and actionable
 - Use emojis sparingly for a friendly tone
 - If they have no workout data, give general beginner-friendly advice and encourage them to log their first workout
-- If body metrics are missing, subtly encourage them to update their profile for more personalized advice`;
+- If body metrics are missing, subtly encourage them to update their profile for more personalized advice
+- CRITICAL: If the user has medical conditions, injuries, or allergies listed — ALWAYS account for these in your advice:
+  * For injuries: avoid or modify exercises that could aggravate the injury, suggest safe alternatives
+  * For health conditions: adjust intensity, breathing cues, and exercise selection accordingly
+  * For allergies/intolerances: account for these in any nutrition or supplement advice
+  * Always add a brief safety disclaimer when relevant (e.g. "Given your knee injury, I've avoided exercises that put heavy load on the knees")
+  * Never ignore or downplay a medical condition — safety comes first`;
 
         // 6. Build messages array for OpenAI
         const openaiMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
@@ -925,16 +995,33 @@ INSTRUCTIONS:
 
         let assistantContent: string;
 
+        // Map model IDs to API providers and model names
+        const MODEL_MAP: Record<string, { provider: string; apiModel: string }> = {
+            'gpt-4o':       { provider: 'openai',   apiModel: 'gpt-4o' },
+            'gpt-4o-mini':  { provider: 'openai',   apiModel: 'gpt-4o-mini' },
+            'claude-sonnet': { provider: 'claude',  apiModel: 'claude-sonnet-4-20250514' },
+            'gemini-flash':  { provider: 'gemini',  apiModel: 'gemini-2.0-flash' },
+            'deepseek-v3':   { provider: 'deepseek', apiModel: 'deepseek-chat' },
+            // Legacy support for old model IDs
+            'openai':  { provider: 'openai',  apiModel: 'gpt-4o-mini' },
+            'claude':  { provider: 'claude',  apiModel: 'claude-sonnet-4-20250514' },
+            'gemini':  { provider: 'gemini',  apiModel: 'gemini-2.0-flash' },
+        };
+
+        const modelConfig = MODEL_MAP[model] || MODEL_MAP['gpt-4o-mini'];
+
         try {
             // 7. Call selected AI provider
-            if (model === 'claude') {
+            if (modelConfig.provider === 'claude') {
                 assistantContent = await callClaude(systemPrompt, openaiMessages);
-            } else if (model === 'gemini') {
+            } else if (modelConfig.provider === 'gemini') {
                 assistantContent = await callGemini(systemPrompt, openaiMessages);
+            } else if (modelConfig.provider === 'deepseek') {
+                assistantContent = await callDeepSeek(systemPrompt, openaiMessages);
             } else {
-                // Default: OpenAI
+                // OpenAI (gpt-4o or gpt-4o-mini)
                 const completion = await openai.chat.completions.create({
-                    model: 'gpt-3.5-turbo',
+                    model: modelConfig.apiModel,
                     messages: openaiMessages,
                     max_tokens: 500,
                     temperature: 0.7,
@@ -942,7 +1029,7 @@ INSTRUCTIONS:
                 assistantContent = completion.choices[0].message.content || "I couldn't generate a response. Please try again!";
             }
         } catch (aiError: any) {
-            console.log(`${model} API error, using offline fallback:`, aiError.message);
+            console.log(`${model} (${modelConfig.provider}) API error, using offline fallback:`, aiError.message);
             // Fallback to offline response with body metrics
             assistantContent = generateOfflineResponse(message, workouts, userRecord);
         }

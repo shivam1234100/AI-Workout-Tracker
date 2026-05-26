@@ -11,6 +11,7 @@ import { DefaultTheme, DarkTheme, NavigationContainer, createNavigationContainer
 import { requestNotificationPermissions, scheduleAllNotifications } from './src/lib/notifications';
 import { useNotificationStore } from './src/store/notificationStore';
 import FloatingAIButton from './src/components/FloatingAIButton';
+import { useHealthSync } from './src/lib/useHealthSync';
 
 const CustomDarkTheme = {
   ...DarkTheme,
@@ -44,6 +45,9 @@ function AppContent() {
   const notificationListener = useRef<Notifications.EventSubscription>();
   const responseListener = useRef<Notifications.EventSubscription>();
   const navRef = useRef(navigationRef);
+
+  // Initialize real-time health tracking (pedometer + calorie sync)
+  useHealthSync();
 
   useEffect(() => {
     (async () => {

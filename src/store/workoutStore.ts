@@ -77,8 +77,12 @@ export const useWorkoutStore = create<WorkoutState>()(
                             return { history: [...data, ...localOnly] };
                         });
                     }
-                } catch (error) {
-                    console.error("Failed to fetch history:", error);
+                } catch (error: any) {
+                    // Silence network errors when backend is unreachable (AbortError, TypeError: Network request failed)
+                    const msg = error?.message || '';
+                    if (!msg.includes('Aborted') && !msg.includes('Network request failed')) {
+                        console.error("Failed to fetch history:", error);
+                    }
                 }
             },
 
@@ -127,8 +131,11 @@ export const useWorkoutStore = create<WorkoutState>()(
                                     console.error(`Backend save failed: ${response.status}`);
                                 }
                             })
-                            .catch((error) => {
-                                console.error("Background sync failed:", error);
+                            .catch((error: any) => {
+                                const msg = error?.message || '';
+                                if (!msg.includes('Aborted') && !msg.includes('Network request failed')) {
+                                    console.error("Background sync failed:", error);
+                                }
                                 // Workout stays as local-only — fine
                             });
                     }
