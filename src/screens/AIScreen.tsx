@@ -598,7 +598,7 @@ export default function AIScreen() {
     const [activeConvoId, setActiveConvoId] = useState<string | null>(null);
     const [activeConvoTitle, setActiveConvoTitle] = useState('New Chat');
     const [showSidebar, setShowSidebar] = useState(true);
-    const [model, setModel] = useState<string>('gpt-4o-mini');
+    const [model, setModel] = useState<string>('gemini-flash');
     const [showModelPicker, setShowModelPicker] = useState(false);
     const scrollRef = useRef<ScrollView>(null);
     const { token, user } = useAuthStore();
@@ -757,7 +757,7 @@ export default function AIScreen() {
 
             {/* Model selector dropdown */}
             {(() => {
-                const currentModel = AI_MODELS.find(m => m.id === model) || AI_MODELS[1];
+                const currentModel = AI_MODELS.find(m => m.id === model) || AI_MODELS.find(m => m.id === 'gemini-flash') || AI_MODELS[0];
                 return (
                     <View style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.borderLight }}>
                         <TouchableOpacity

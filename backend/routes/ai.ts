@@ -1054,7 +1054,7 @@ INSTRUCTIONS:
             'gemini':  { provider: 'gemini',  apiModel: 'gemini-2.0-flash' },
         };
 
-        const modelConfig = MODEL_MAP[model] || MODEL_MAP['gpt-4o-mini'];
+        const modelConfig = MODEL_MAP[model] || MODEL_MAP['gemini-flash'];
 
         try {
             // 7. Call selected AI provider
