@@ -41,3 +41,4 @@ yarn-error.log*
 # Personal / meeting docs — keep local, not in repo
 *.pdf
 DEPLOY_AND_TEST.md
+PROJECT_REPORT.md
