@@ -10,8 +10,10 @@ const prisma = new PrismaClient();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
-// Resend email client (free tier: 100 emails/day)
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Resend email client (free tier: 100 emails/day).
+// Only instantiate when a key is present — the SDK throws on an empty key,
+// which would crash the whole server at startup in environments without it.
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // DEV ONLY: Delete all users (remove this in production!)
 router.delete('/delete-all-users', async (req, res) => {
@@ -140,8 +142,8 @@ router.post('/forgot-password', async (req, res) => {
 
         let emailSent = false;
 
-        // Send email via Resend if API key is configured
-        if (process.env.RESEND_API_KEY) {
+        // Send email via Resend if the client is configured
+        if (resend) {
             try {
                 await resend.emails.send({
                     from: 'AI Workout Tracker <onboarding@resend.dev>',
