@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme, accent, shadows } from '../context/ThemeContext';
 import { useHealthStore } from '../store/healthStore';
 import { useAuthStore } from '../store/authStore';
+import { computeBMR } from '../lib/healthCalc';
 import ActivityRings from '../components/ActivityRings';
 import BarChart from '../components/BarChart';
 import { ArrowLeft, Flame, Zap, Timer, Activity } from 'lucide-react-native';
@@ -18,16 +19,6 @@ const RING_COLORS = {
     stand: '#00CED1',
     standBg: 'rgba(0, 206, 209, 0.2)',
 };
-
-function computeBMR(weight?: number | null, height?: number | null, gender?: string | null): number {
-    const w = weight || 70;
-    const h = height || 170;
-    const age = 25;
-    if (gender === 'female') {
-        return Math.round(10 * w + 6.25 * h - 5 * age - 161);
-    }
-    return Math.round(10 * w + 6.25 * h - 5 * age + 5);
-}
 
 export default function CalorieScreen({ navigation }: any) {
     const { isDark, colors } = useTheme();
@@ -49,7 +40,7 @@ export default function CalorieScreen({ navigation }: any) {
     const exerciseProgress = exerciseGoal > 0 ? todayCalories.exercise / exerciseGoal : 0;
     const standProgress = standGoal > 0 ? todayCalories.stand / standGoal : 0;
 
-    const bmr = computeBMR(user?.weight, user?.height, user?.gender);
+    const bmr = computeBMR({ weight: user?.weight, height: user?.height, gender: user?.gender, age: user?.age });
 
     const getActiveChartData = () => {
         const days = period === 'D' ? 1 : period === 'W' ? 7 : 30;

@@ -17,7 +17,7 @@ export interface DayCalories {
 }
 
 // Bump this version to force a wipe of stale/mock history data
-const HEALTH_DATA_VERSION = 2;
+const HEALTH_DATA_VERSION = 3;
 
 interface HealthState {
     _dataVersion: number;
@@ -209,8 +209,8 @@ export const useHealthStore = create<HealthState>()(
             },
         }),
         {
-            // Changed key from 'health-storage' to force a complete wipe of old mock data
-            name: 'health-storage-v2',
+            // Bump this key to force a complete wipe of old/stale health data
+            name: 'health-storage-v3',
             storage: createJSONStorage(() => AsyncStorage),
         }
     )

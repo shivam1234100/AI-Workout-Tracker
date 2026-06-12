@@ -11,6 +11,7 @@ interface User {
     height?: number | null;
     weight?: number | null;
     gender?: string | null;
+    age?: number | null;
 }
 
 interface LoginInput {

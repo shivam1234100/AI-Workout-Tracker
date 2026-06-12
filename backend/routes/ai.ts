@@ -157,15 +157,56 @@ function generateOfflineResponse(query: string, workouts: any[], userProfile?: a
             const proteinHigh = Math.round(userProfile.weight * 2.2);
             metrics.push(`Protein target: ${proteinLow}-${proteinHigh}g/day`);
             const isMale = userProfile.gender?.toLowerCase() === 'male';
-            const bmr = isMale
-                ? 10 * userProfile.weight + 6.25 * userProfile.height - 5 * 25 + 5
-                : 10 * userProfile.weight + 6.25 * userProfile.height - 5 * 25 - 161;
+            const ageKnown = !!userProfile.age;
+            const age = userProfile.age || 30;
+            const bmr = Math.round(isMale
+                ? 10 * userProfile.weight + 6.25 * userProfile.height - 5 * age + 5
+                : 10 * userProfile.weight + 6.25 * userProfile.height - 5 * age - 161);
             const maintenance = Math.round(bmr * 1.55);
-            metrics.push(`Est. maintenance: ~${maintenance} kcal/day`);
+            metrics.push(`BMR: ${bmr} kcal/day (Mifflin-St Jeor, age ${age}${ageKnown ? '' : ' assumed'})`);
+            metrics.push(`Est. maintenance/TDEE: ~${maintenance} kcal/day (BMR x 1.55 moderate-activity factor)`);
         }
         if (metrics.length > 0) {
             personalContext += `\n📋 Your profile: ${metrics.join(' | ')}`;
         }
+    }
+
+    // ──── HOW MAINTENANCE / BMR / TDEE IS CALCULATED ────
+    // Checked before the generic nutrition branch so "how are my calories calculated" is answered precisely.
+    if (
+        lq.includes('maintenance') || lq.includes('tdee') || lq.includes('bmr') ||
+        ((lq.includes('how') || lq.includes('explain') || lq.includes('calculat') || lq.includes('formula')) &&
+            (lq.includes('calorie') || lq.includes('energy')))
+    ) {
+        if (userProfile?.height && userProfile?.weight) {
+            const isMale = userProfile.gender?.toLowerCase() === 'male';
+            const ageKnown = !!userProfile.age;
+            const age = userProfile.age || 30;
+            const bmr = Math.round(
+                10 * userProfile.weight + 6.25 * userProfile.height - 5 * age + (isMale ? 5 : -161)
+            );
+            const maintenance = Math.round(bmr * 1.55);
+            return `Here's exactly how I work out your maintenance calories 🔢
+
+**Step 1 — BMR (Mifflin-St Jeor formula):**
+(10 × weight) + (6.25 × height) − (5 × age) ${isMale ? '+ 5 (male)' : '− 161 (female)'}
+= (10 × ${userProfile.weight}) + (6.25 × ${userProfile.height}) − (5 × ${age}) ${isMale ? '+ 5' : '− 161'}
+= **${bmr} kcal/day** — your resting (basal) energy.
+
+**Step 2 — Maintenance (TDEE):**
+BMR × activity factor → ${bmr} × 1.55 (moderate activity)
+= **~${maintenance} kcal/day**
+
+So at roughly **${maintenance} kcal/day** your weight stays stable. Eat ~300-500 below it to lose fat, or ~300-500 above it to build muscle.
+
+⚠️ I assumed ${ageKnown ? `age ${age}` : `age ${age} (you haven't set your age yet)`} and a moderate ×1.55 activity level${ageKnown ? '' : ' — add your age in your profile for an exact number'}. The activity factor ranges from ×1.2 (sedentary) to ×1.9 (very active).`;
+        }
+        return `To calculate maintenance calories I use the **Mifflin-St Jeor** formula:
+
+**BMR** = (10 × weight kg) + (6.25 × height cm) − (5 × age) + 5 (male) / − 161 (female)
+**Maintenance (TDEE)** = BMR × activity factor (×1.2 sedentary → ×1.9 very active; I use ×1.55 for moderate).
+
+I can't compute your exact numbers yet — please add your **height, weight, gender, and age** in your profile, then ask again! 📋`;
     }
 
     // ──── WEEKLY / WORKOUT PLAN ────
@@ -905,13 +946,17 @@ router.post('/chat', authenticateToken, async (req: any, res) => {
             if (userRecord.height && userRecord.weight) {
                 const bmi = (userRecord.weight / ((userRecord.height / 100) ** 2)).toFixed(1);
                 parts.push(`BMI: ${bmi}`);
-                // Estimate maintenance calories (Mifflin-St Jeor)
+                // Estimate maintenance calories (Mifflin-St Jeor BMR x activity factor)
                 const isMale = userRecord.gender?.toLowerCase() === 'male';
-                const bmr = isMale
-                    ? 10 * userRecord.weight + 6.25 * userRecord.height - 5 * 25 + 5
-                    : 10 * userRecord.weight + 6.25 * userRecord.height - 5 * 25 - 161;
+                const recordAge = (userRecord as any).age;
+                const ageKnown = !!recordAge;
+                const age = recordAge || 30;
+                const bmr = Math.round(isMale
+                    ? 10 * userRecord.weight + 6.25 * userRecord.height - 5 * age + 5
+                    : 10 * userRecord.weight + 6.25 * userRecord.height - 5 * age - 161);
                 const maintenance = Math.round(bmr * 1.55); // moderate activity
-                parts.push(`Est. maintenance calories: ~${maintenance} kcal/day (moderate activity)`);
+                parts.push(`BMR: ${bmr} kcal/day (Mifflin-St Jeor formula, age ${age}${ageKnown ? '' : ' assumed since not provided'})`);
+                parts.push(`Est. maintenance calories (TDEE): ~${maintenance} kcal/day = BMR ${bmr} x 1.55 (moderate-activity factor)`);
                 const proteinLow = Math.round(userRecord.weight * 1.6);
                 const proteinHigh = Math.round(userRecord.weight * 2.2);
                 parts.push(`Recommended protein: ${proteinLow}-${proteinHigh}g/day`);
@@ -967,6 +1012,7 @@ INSTRUCTIONS:
 - Use their body metrics (height, weight, gender, BMI) to personalize nutrition and training advice
 - Reference their step count, active calories, and exercise time when relevant (especially for questions about activity, cardio, or daily movement)
 - Calculate specific calorie and protein targets based on their weight and goals
+- When asked HOW a number (BMR, maintenance/TDEE, protein) was calculated, explain it using EXACTLY the formula and assumptions shown in the metrics above (Mifflin-St Jeor BMR, the x1.55 moderate-activity factor for maintenance/TDEE, and the age stated — noting it is assumed if marked so). Do NOT invent a different formula, activity multiplier, or age, and make sure your explained math matches the numbers provided
 - Notice and comment on trends (improving/plateauing/declining performance)
 - Suggest progressive overload based on their recent numbers (e.g., "try 72.5kg next time")
 - If they ask about steps, calories, or activity — use the real health data provided

@@ -4,19 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useHealthStore } from '../store/healthStore';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
-
-/**
- * Computes BMR using Mifflin-St Jeor equation
- */
-function computeBMR(weight?: number | null, height?: number | null, gender?: string | null): number {
-    const w = weight || 70;
-    const h = height || 170;
-    const age = 25; // default assumption
-    if (gender?.toLowerCase() === 'female') {
-        return Math.round(10 * w + 6.25 * h - 5 * age - 161);
-    }
-    return Math.round(10 * w + 6.25 * h - 5 * age + 5);
-}
+import { restingCaloriesSoFar, caloriesFromSteps } from './healthCalc';
 
 /**
  * Hook that manages real pedometer subscription and calorie calculations.
@@ -44,14 +32,11 @@ export function useHealthSync() {
         const userProfile = useAuthStore.getState().user;
         const allWorkouts = useWorkoutStore.getState().history;
 
-        const bmr = computeBMR(userProfile?.weight, userProfile?.height, userProfile?.gender);
+        // Resting energy burned so far today (personalized BMR scaled by elapsed day)
+        const dailyResting = restingCaloriesSoFar(userProfile || {});
 
-        // Resting energy proportional to how much of the day has passed
-        const hoursPassed = new Date().getHours() + new Date().getMinutes() / 60;
-        const dailyResting = Math.round(bmr * (hoursPassed / 24));
-
-        // Active calories from steps (~0.04 kcal per step average)
-        const stepsCalories = Math.round(currentSteps * 0.04);
+        // Active calories from steps, personalized by body weight
+        const stepsCalories = caloriesFromSteps(currentSteps, userProfile?.weight);
 
         // Workout calories from today's workouts
         const todayStart = new Date();
@@ -77,8 +62,9 @@ export function useHealthSync() {
 
         const totalActive = stepsCalories + Math.round(workoutCalories);
 
-        // Stand hours — estimate based on active hours (hours where steps > 0)
+        // Stand hours — estimate based on how much of the day has passed
         // Simple heuristic: if you've taken steps, you've been standing
+        const hoursPassed = new Date().getHours() + new Date().getMinutes() / 60;
         const standHours = Math.min(Math.max(Math.round(hoursPassed * 0.6), currentSteps > 0 ? 1 : 0), 24);
 
         updateTodayCalories({
@@ -149,8 +135,8 @@ export function useHealthSync() {
     };
 
     useEffect(() => {
-        // Purge old mock data storage key
-        AsyncStorage.removeItem('health-storage').catch(() => {});
+        // Purge old/stale health storage keys from previous versions
+        AsyncStorage.multiRemove(['health-storage', 'health-storage-v2']).catch(() => {});
 
         // Reset if new day
         syncDayReset();

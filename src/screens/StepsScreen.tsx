@@ -3,6 +3,8 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme, accent, shadows } from '../context/ThemeContext';
 import { useHealthStore } from '../store/healthStore';
+import { useAuthStore } from '../store/authStore';
+import { caloriesFromSteps, distanceFromSteps } from '../lib/healthCalc';
 import BarChart from '../components/BarChart';
 import { ArrowLeft, Flame, Target, TrendingUp, Footprints } from 'lucide-react-native';
 
@@ -13,6 +15,7 @@ const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'S
 
 export default function StepsScreen({ navigation }: any) {
     const { isDark, colors } = useTheme();
+    const { user } = useAuthStore();
     const {
         todaySteps,
         stepGoal,
@@ -91,8 +94,8 @@ export default function StepsScreen({ navigation }: any) {
         return `${MONTH_LABELS[now.getMonth()]} ${now.getFullYear()}`;
     };
 
-    const distance = ((todaySteps * 0.762) / 1000).toFixed(1); // avg stride 0.762m
-    const calories = Math.round(todaySteps * 0.04);
+    const distance = distanceFromSteps(todaySteps, user?.height).toFixed(1); // stride from height
+    const calories = caloriesFromSteps(todaySteps, user?.weight); // personalized by weight
     const goalProgress = stepGoal > 0 ? todaySteps / stepGoal : 0;
 
     const glassCard = {

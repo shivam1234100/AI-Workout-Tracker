@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme, accent, shadows } from '../context/ThemeContext';
 import { useHealthStore } from '../store/healthStore';
 import { useAuthStore } from '../store/authStore';
+import { computeBMR, distanceFromSteps } from '../lib/healthCalc';
 import ActivityRings from '../components/ActivityRings';
 import BarChart from '../components/BarChart';
 import {
@@ -25,14 +26,6 @@ const RING_COLORS = {
     standBg: 'rgba(0, 206, 209, 0.2)',
 };
 
-function computeBMR(weight?: number | null, height?: number | null, gender?: string | null): number {
-    const w = weight || 70;
-    const h = height || 170;
-    const age = 25;
-    if (gender === 'female') return Math.round(10 * w + 6.25 * h - 5 * age - 161);
-    return Math.round(10 * w + 6.25 * h - 5 * age + 5);
-}
-
 export default function HealthDashboardScreen({ navigation }: any) {
     const { isDark, colors } = useTheme();
     const { user } = useAuthStore();
@@ -53,8 +46,8 @@ export default function HealthDashboardScreen({ navigation }: any) {
     const exerciseProgress = exerciseGoal > 0 ? todayCalories.exercise / exerciseGoal : 0;
     const standProgress = standGoal > 0 ? todayCalories.stand / standGoal : 0;
 
-    const distance = ((todaySteps * 0.762) / 1000).toFixed(1);
-    const bmr = computeBMR(user?.weight, user?.height, user?.gender);
+    const distance = distanceFromSteps(todaySteps, user?.height).toFixed(1);
+    const bmr = computeBMR({ weight: user?.weight, height: user?.height, gender: user?.gender, age: user?.age });
 
     const weekSteps = getStepsForRange(7);
     const todayDate = new Date().toISOString().split('T')[0];
