@@ -37,3 +37,7 @@ yarn-error.log*
 
 # Git backup
 .git_backup/
+
+# Personal / meeting docs — keep local, not in repo
+*.pdf
+DEPLOY_AND_TEST.md
