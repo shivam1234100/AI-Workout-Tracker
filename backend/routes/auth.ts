@@ -15,21 +15,6 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 // which would crash the whole server at startup in environments without it.
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-// DEV ONLY: Delete all users (remove this in production!)
-router.delete('/delete-all-users', async (req, res) => {
-    try {
-        // First delete all workouts and exercises (due to relations)
-        await prisma.exercise.deleteMany({});
-        await prisma.workout.deleteMany({});
-        await prisma.user.deleteMany({});
-        res.json({ message: 'All users deleted successfully' });
-    } catch (error) {
-        console.error("Delete Error:", error);
-        res.status(500).json({ error: 'Error deleting users' });
-    }
-});
-
-
 // Register
 router.post('/register', async (req, res) => {
     try {
