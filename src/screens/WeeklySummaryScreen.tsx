@@ -83,28 +83,28 @@ export default function WeeklySummaryScreen({ navigation }: any) {
                     <>
                         {stats && (
                             <View className="px-4 flex-row flex-wrap mb-3">
-                                <View style={glassCard} className="rounded-2xl p-3 m-1" style={{ width: '47%' }}>
+                                <View style={[glassCard, { width: '47%' }]} className="rounded-2xl p-3 m-1">
                                     <View style={{ backgroundColor: accent.indigoBg }} className="w-9 h-9 rounded-xl items-center justify-center mb-2">
                                         <Dumbbell size={16} color={accent.indigo} />
                                     </View>
                                     <Text style={{ color: colors.text }} className="text-xl font-bold">{stats.totalWorkouts}</Text>
                                     <Text style={{ color: colors.textTertiary, fontSize: 11 }}>Workouts</Text>
                                 </View>
-                                <View style={glassCard} className="rounded-2xl p-3 m-1" style={{ width: '47%' }}>
+                                <View style={[glassCard, { width: '47%' }]} className="rounded-2xl p-3 m-1">
                                     <View style={{ backgroundColor: accent.amberBg }} className="w-9 h-9 rounded-xl items-center justify-center mb-2">
                                         <TrendingUp size={16} color={accent.amber} />
                                     </View>
                                     <Text style={{ color: colors.text }} className="text-xl font-bold">{stats.totalSets}</Text>
                                     <Text style={{ color: colors.textTertiary, fontSize: 11 }}>Sets</Text>
                                 </View>
-                                <View style={glassCard} className="rounded-2xl p-3 m-1" style={{ width: '47%' }}>
+                                <View style={[glassCard, { width: '47%' }]} className="rounded-2xl p-3 m-1">
                                     <View style={{ backgroundColor: accent.greenBg }} className="w-9 h-9 rounded-xl items-center justify-center mb-2">
                                         <Flame size={16} color={accent.green} />
                                     </View>
                                     <Text style={{ color: colors.text }} className="text-xl font-bold">{Math.round(stats.totalVolume).toLocaleString()}</Text>
                                     <Text style={{ color: colors.textTertiary, fontSize: 11 }}>Volume (kg)</Text>
                                 </View>
-                                <View style={glassCard} className="rounded-2xl p-3 m-1" style={{ width: '47%' }}>
+                                <View style={[glassCard, { width: '47%' }]} className="rounded-2xl p-3 m-1">
                                     <View style={{ backgroundColor: accent.cyanBg }} className="w-9 h-9 rounded-xl items-center justify-center mb-2">
                                         <Clock size={16} color={accent.cyan} />
                                     </View>
