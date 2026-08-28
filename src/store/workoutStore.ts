@@ -6,7 +6,8 @@ import { useAuthStore } from './authStore';
 import { ProgramDayExercise } from '../constants/coachPrograms';
 
 // Helper: fetch with a timeout so we fail fast if the backend is unreachable
-const fetchWithTimeout = (url: string, options: RequestInit = {}, timeoutMs = 10000): Promise<Response> => {
+// 45s default to absorb a cold start on the free-tier backend (see authStore).
+const fetchWithTimeout = (url: string, options: RequestInit = {}, timeoutMs = 45000): Promise<Response> => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeout));

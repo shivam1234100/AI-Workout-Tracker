@@ -41,7 +41,10 @@ interface AuthState {
     fetchProfile: () => Promise<void>;
 }
 
-const fetchWithTimeout = (url: string, options: RequestInit = {}, timeoutMs = 15000): Promise<Response> => {
+// 60s default: the backend runs on a free Render instance that spins down after
+// inactivity and takes ~30-40s to wake. A shorter timeout aborts the very first
+// login of the day before the server has finished starting.
+const fetchWithTimeout = (url: string, options: RequestInit = {}, timeoutMs = 60000): Promise<Response> => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeout));
