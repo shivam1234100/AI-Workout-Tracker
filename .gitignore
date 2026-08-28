@@ -10,8 +10,12 @@ dist/
 backend/node_modules/
 backend/.env
 backend/dist/
+
+# Local database files & logs — never commit, they contain real user records
 backend/mongodb_data*/
-backend/mongod.log
+backend/mongodb_rs/
+backend/prisma/dev.db
+backend/*.log
 
 # OS
 .DS_Store
