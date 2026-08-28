@@ -817,7 +817,7 @@ Feel free to ask anything specific and I'll give you a detailed answer! 🏋️$
 // POST /ai/chat — Send message, get personalized AI response
 // ═════════════════════════════════════════════
 // Helper: call Anthropic Claude API
-async function callClaude(systemPrompt: string, messages: any[]): Promise<string> {
+async function callClaude(systemPrompt: string, messages: any[], apiModel: string): Promise<string> {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error('Anthropic API key not configured');
 
@@ -830,19 +830,24 @@ async function callClaude(systemPrompt: string, messages: any[]): Promise<string
             'content-type': 'application/json',
         },
         body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
+            model: apiModel,
             max_tokens: 500,
             system: systemPrompt,
             messages: userMessages,
         }),
     });
-    if (!res.ok) throw new Error(`Claude API error: ${res.status}`);
+    if (!res.ok) {
+        // Include the response body — a bare status code hides the actual cause
+        // (retired model name, disabled API, quota) and makes this hard to debug.
+        const detail = await res.text().catch(() => '');
+        throw new Error(`Claude API error: ${res.status} ${detail.slice(0, 300)}`);
+    }
     const data: any = await res.json();
     return data.content?.[0]?.text || 'No response from Claude';
 }
 
 // Helper: call Google Gemini API
-async function callGemini(systemPrompt: string, messages: any[]): Promise<string> {
+async function callGemini(systemPrompt: string, messages: any[], apiModel: string): Promise<string> {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error('Gemini API key not configured');
 
@@ -854,7 +859,7 @@ async function callGemini(systemPrompt: string, messages: any[]): Promise<string
         }));
 
     const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${apiModel}:generateContent?key=${apiKey}`,
         {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
@@ -865,13 +870,18 @@ async function callGemini(systemPrompt: string, messages: any[]): Promise<string
             }),
         }
     );
-    if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+    if (!res.ok) {
+        // Include the response body — a bare status code hides the actual cause
+        // (retired model name, disabled API, quota) and makes this hard to debug.
+        const detail = await res.text().catch(() => '');
+        throw new Error(`Gemini API error: ${res.status} ${detail.slice(0, 300)}`);
+    }
     const data: any = await res.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
 }
 
 // Helper: call DeepSeek API (OpenAI-compatible)
-async function callDeepSeek(systemPrompt: string, messages: any[]): Promise<string> {
+async function callDeepSeek(systemPrompt: string, messages: any[], apiModel: string): Promise<string> {
     const apiKey = process.env.DEEPSEEK_API_KEY;
     if (!apiKey) throw new Error('DeepSeek API key not configured');
 
@@ -882,7 +892,7 @@ async function callDeepSeek(systemPrompt: string, messages: any[]): Promise<stri
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            model: 'deepseek-chat',
+            model: apiModel,
             messages: [
                 { role: 'system', content: systemPrompt },
                 ...messages.filter(m => m.role !== 'system'),
@@ -891,7 +901,12 @@ async function callDeepSeek(systemPrompt: string, messages: any[]): Promise<stri
             temperature: 0.7,
         }),
     });
-    if (!res.ok) throw new Error(`DeepSeek API error: ${res.status}`);
+    if (!res.ok) {
+        // Include the response body — a bare status code hides the actual cause
+        // (retired model name, disabled API, quota) and makes this hard to debug.
+        const detail = await res.text().catch(() => '');
+        throw new Error(`DeepSeek API error: ${res.status} ${detail.slice(0, 300)}`);
+    }
     const data: any = await res.json();
     return data.choices?.[0]?.message?.content || 'No response from DeepSeek';
 }
@@ -1046,12 +1061,12 @@ INSTRUCTIONS:
             'gpt-4o':       { provider: 'openai',   apiModel: 'gpt-4o' },
             'gpt-4o-mini':  { provider: 'openai',   apiModel: 'gpt-4o-mini' },
             'claude-sonnet': { provider: 'claude',  apiModel: 'claude-sonnet-4-20250514' },
-            'gemini-flash':  { provider: 'gemini',  apiModel: 'gemini-2.0-flash' },
+            'gemini-flash':  { provider: 'gemini',  apiModel: 'gemini-2.5-flash' },
             'deepseek-v3':   { provider: 'deepseek', apiModel: 'deepseek-chat' },
             // Legacy support for old model IDs
             'openai':  { provider: 'openai',  apiModel: 'gpt-4o-mini' },
             'claude':  { provider: 'claude',  apiModel: 'claude-sonnet-4-20250514' },
-            'gemini':  { provider: 'gemini',  apiModel: 'gemini-2.0-flash' },
+            'gemini':  { provider: 'gemini',  apiModel: 'gemini-2.5-flash' },
         };
 
         const modelConfig = MODEL_MAP[model] || MODEL_MAP['gemini-flash'];
@@ -1059,11 +1074,11 @@ INSTRUCTIONS:
         try {
             // 7. Call selected AI provider
             if (modelConfig.provider === 'claude') {
-                assistantContent = await callClaude(systemPrompt, openaiMessages);
+                assistantContent = await callClaude(systemPrompt, openaiMessages, modelConfig.apiModel);
             } else if (modelConfig.provider === 'gemini') {
-                assistantContent = await callGemini(systemPrompt, openaiMessages);
+                assistantContent = await callGemini(systemPrompt, openaiMessages, modelConfig.apiModel);
             } else if (modelConfig.provider === 'deepseek') {
-                assistantContent = await callDeepSeek(systemPrompt, openaiMessages);
+                assistantContent = await callDeepSeek(systemPrompt, openaiMessages, modelConfig.apiModel);
             } else {
                 // OpenAI (gpt-4o or gpt-4o-mini)
                 const completion = await openai.chat.completions.create({
