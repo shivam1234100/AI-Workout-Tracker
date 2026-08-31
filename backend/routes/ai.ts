@@ -994,6 +994,12 @@ async function callClaude(systemPrompt: string, messages: any[], apiModel: strin
     return data.content?.[0]?.text || 'No response from Claude';
 }
 
+// Newer-to-older Gemini names tried when the requested one is retired.
+// Google returns 404 "no longer available to new users" once a model is pulled,
+// which silently dropped the whole coach onto its offline fallback. Walking this
+// list means one retirement no longer takes the AI coach down.
+const GEMINI_FALLBACK_MODELS = ['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-flash-latest'];
+
 // Helper: call Google Gemini API
 async function callGemini(systemPrompt: string, messages: any[], apiModel: string): Promise<string> {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -1006,26 +1012,42 @@ async function callGemini(systemPrompt: string, messages: any[], apiModel: strin
             parts: [{ text: m.content }],
         }));
 
-    const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${apiModel}:generateContent?key=${apiKey}`,
-        {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                contents,
-                generationConfig: { maxOutputTokens: 500, temperature: 0.7 },
-            }),
+    // Requested model first, then the fallbacks, skipping duplicates.
+    const candidates = [apiModel, ...GEMINI_FALLBACK_MODELS.filter(m => m !== apiModel)];
+    let lastError = '';
+
+    for (const candidate of candidates) {
+        const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${candidate}:generateContent?key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    contents,
+                    generationConfig: { maxOutputTokens: 500, temperature: 0.7 },
+                }),
+            }
+        );
+
+        if (res.ok) {
+            const data: any = await res.json();
+            if (candidate !== apiModel) console.log(`Gemini: ${apiModel} unavailable, served by ${candidate}`);
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
         }
-    );
-    if (!res.ok) {
+
         // Include the response body — a bare status code hides the actual cause
         // (retired model name, disabled API, quota) and makes this hard to debug.
         const detail = await res.text().catch(() => '');
-        throw new Error(`Gemini API error: ${res.status} ${detail.slice(0, 300)}`);
+        lastError = `Gemini API error: ${res.status} ${detail.slice(0, 300)}`;
+
+        // Only a missing/retired model is worth retrying under another name.
+        // A bad key or exhausted quota fails identically for every model.
+        if (res.status !== 404) break;
+        console.log(`Gemini model ${candidate} unavailable (404), trying next`);
     }
-    const data: any = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
+
+    throw new Error(lastError || 'Gemini API error: no model available');
 }
 
 // Helper: call DeepSeek API (OpenAI-compatible)
@@ -1209,12 +1231,12 @@ INSTRUCTIONS:
             'gpt-4o':       { provider: 'openai',   apiModel: 'gpt-4o' },
             'gpt-4o-mini':  { provider: 'openai',   apiModel: 'gpt-4o-mini' },
             'claude-sonnet': { provider: 'claude',  apiModel: 'claude-sonnet-4-20250514' },
-            'gemini-flash':  { provider: 'gemini',  apiModel: 'gemini-2.5-flash' },
+            'gemini-flash':  { provider: 'gemini',  apiModel: 'gemini-3.6-flash' },
             'deepseek-v3':   { provider: 'deepseek', apiModel: 'deepseek-chat' },
             // Legacy support for old model IDs
             'openai':  { provider: 'openai',  apiModel: 'gpt-4o-mini' },
             'claude':  { provider: 'claude',  apiModel: 'claude-sonnet-4-20250514' },
-            'gemini':  { provider: 'gemini',  apiModel: 'gemini-2.5-flash' },
+            'gemini':  { provider: 'gemini',  apiModel: 'gemini-3.6-flash' },
         };
 
         const modelConfig = MODEL_MAP[model] || MODEL_MAP['gemini-flash'];
