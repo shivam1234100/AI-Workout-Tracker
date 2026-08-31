@@ -113,8 +113,105 @@ function buildUserProfile(workouts: any[]): string {
 // Used when OpenAI API is unavailable — provides
 // detailed, structured, actionable answers.
 // ─────────────────────────────────────────────
-function generateOfflineResponse(query: string, workouts: any[], userProfile?: any): string {
+type MedicalItem = { text: string; type: string };
+
+// Per-injury training guidance. Keyed by the words users actually type.
+const INJURY_GUIDANCE: { match: string[]; advice: string }[] = [
+    { match: ['knee', 'acl', 'mcl', 'meniscus', 'patella'], advice: 'Avoid: deep squats, leg extensions, lunges, jumping/plyometrics. Safer: leg press with limited range, wall sits, hamstring curls, hip thrusts, swimming, cycling with a high saddle.' },
+    { match: ['back', 'spine', 'disc', 'sciatica', 'lumbar'], advice: 'Avoid: heavy deadlifts, bent-over barbell rows, sit-ups, back extensions under load. Safer: chest-supported rows, seated cable rows, bird dogs, planks, McGill curl-ups, goblet squats.' },
+    { match: ['shoulder', 'rotator', 'labrum', 'ac joint'], advice: 'Avoid: behind-the-neck press, upright rows, heavy overhead pressing, deep dips. Safer: landmine press, light lateral raises, face pulls, external rotations, chest-supported rows.' },
+    { match: ['wrist', 'hand', 'grip', 'carpal'], advice: 'Avoid: heavy straight-bar curls, front squats with a clean grip, push-ups on flat palms. Safer: lifting straps, machines, EZ-bar, neutral-grip dumbbells, push-ups on handles.' },
+    { match: ['ankle', 'foot', 'achilles', 'plantar', 'shin'], advice: 'Avoid: running, box jumps, heavy standing calf raises. Safer: swimming, cycling, seated/supported lower-body machines, upper-body focus.' },
+    { match: ['hip', 'groin', 'adductor', 'labral'], advice: 'Avoid: wide-stance/sumo work, deep lunges, heavy hip abduction. Safer: glute bridges, controlled-range leg press, swimming, light banded work.' },
+    { match: ['elbow', 'tennis', 'golfer', 'tendon'], advice: 'Avoid: heavy curls, skull crushers, grip-intensive pulling. Safer: slow eccentric wrist work, bands, neutral grips, reduced load with higher reps.' },
+    { match: ['neck', 'cervical'], advice: 'Avoid: heavy shrugs, overhead pressing, neck bridges. Safer: gentle mobility, chin tucks, isometric holds, machine-supported pressing.' },
+    { match: ['hernia', 'abdominal'], advice: 'Avoid: heavy bracing/Valsalva, heavy overhead work, weighted sit-ups. Get surgical clearance before loading the core.' },
+];
+
+const CONDITION_GUIDANCE: { match: string[]; advice: string }[] = [
+    { match: ['asthma', 'breathing', 'copd'], advice: 'Keep an inhaler nearby, warm up for 10+ minutes, avoid cold/dry air, and drop intensity if breathing gets laboured.' },
+    { match: ['diabetes', 'sugar', 'insulin'], advice: 'Check blood sugar before and after training, carry fast-acting carbs, and do not train fasted.' },
+    { match: ['blood pressure', 'hypertension', 'bp'], advice: 'Avoid heavy isometric holds and the Valsalva manoeuvre. Favour moderate intensity, steady cardio, and higher-rep lighter sets.' },
+    { match: ['heart', 'cardiac', 'arrhythmia'], advice: 'Stay at low-to-moderate intensity, monitor heart rate, avoid maximal efforts, and get cardiologist clearance.' },
+    { match: ['arthritis', 'joint'], advice: 'Warm up thoroughly, use lighter loads with more reps, and prefer swimming/cycling over ballistic movements.' },
+    { match: ['thyroid'], advice: 'Energy levels can swing day to day — keep intensity flexible and stay consistent rather than maximal.' },
+    { match: ['pcos'], advice: 'Resistance training plus moderate cardio helps insulin sensitivity. Prioritise protein and avoid excessive fasted cardio.' },
+    { match: ['anemia', 'anaemia', 'iron'], advice: 'Expect lower endurance. Keep cardio moderate, avoid long fasted sessions, and follow your doctor on iron intake.' },
+];
+
+const ALLERGY_SWAPS: { match: string[]; advice: string }[] = [
+    { match: ['lactose', 'dairy', 'milk'], advice: 'Skip dairy — use oat/almond milk, soy yogurt, and a plant or lactose-free protein powder.' },
+    { match: ['gluten', 'wheat', 'celiac', 'coeliac'], advice: 'Use certified gluten-free oats, and rice/quinoa/potatoes instead of bread and pasta.' },
+    { match: ['nut', 'peanut'], advice: 'Swap nuts for seeds (sunflower, pumpkin) and seed butters.' },
+    { match: ['egg'], advice: 'Replace eggs with chicken, fish, tofu, or a protein shake to keep protein up.' },
+    { match: ['soy'], advice: 'Avoid soy — whey or pea protein and hemp milk work as alternatives.' },
+    { match: ['shellfish', 'seafood', 'fish'], advice: 'Get omega-3s from flax/chia/walnuts or an algae-based supplement instead.' },
+];
+
+function lookupGuidance(text: string, table: { match: string[]; advice: string }[]): string | null {
+    const t = text.toLowerCase();
+    for (const entry of table) {
+        if (entry.match.some(m => t.includes(m))) return entry.advice;
+    }
+    return null;
+}
+
+// Splits the client-supplied medical list into categories and pre-builds the
+// blocks the offline answers need. Everything here is derived from the user's
+// OWN saved conditions — nothing is hardcoded to a particular injury.
+function buildMedicalContext(healthContext?: any) {
+    const all: MedicalItem[] = Array.isArray(healthContext?.medicalConditions)
+        ? healthContext.medicalConditions.filter((c: any) => c && typeof c.text === 'string' && c.text.trim())
+        : [];
+    const notes: string = (healthContext?.medicalNotes || '').trim();
+
+    const injuries = all.filter(c => c.type === 'injury');
+    const conditions = all.filter(c => c.type === 'condition');
+    const allergies = all.filter(c => c.type === 'allergy');
+    const other = all.filter(c => c.type === 'other' || !['injury', 'condition', 'allergy'].includes(c.type));
+    const has = all.length > 0 || !!notes;
+
+    // Detailed "how this changes your training" block, appended to workout answers.
+    const buildAdvisory = (): string => {
+        if (!has) return '';
+        const parts: string[] = ['\n\n⚠️ Adjusted for your medical profile:'];
+        if (injuries.length > 0) {
+            parts.push(`🩹 **Injuries:** ${injuries.map(c => c.text).join(', ')}`);
+            for (const inj of injuries) {
+                parts.push(`   → ${lookupGuidance(inj.text, INJURY_GUIDANCE)
+                    || `Work around the affected area — drop the load, shorten the range of motion, and skip anything that causes sharp pain.`}`);
+            }
+        }
+        if (conditions.length > 0) {
+            parts.push(`🏥 **Health conditions:** ${conditions.map(c => c.text).join(', ')}`);
+            for (const cond of conditions) {
+                parts.push(`   → ${lookupGuidance(cond.text, CONDITION_GUIDANCE)
+                    || 'Clear your training intensity with your doctor and build up gradually.'}`);
+            }
+        }
+        if (allergies.length > 0) {
+            parts.push(`⚡ **Allergies/intolerances:** ${allergies.map(c => c.text).join(', ')}`);
+            for (const a of allergies) {
+                parts.push(`   → ${lookupGuidance(a.text, ALLERGY_SWAPS) || `I'll keep ${a.text} out of any food or supplement suggestion.`}`);
+            }
+        }
+        if (other.length > 0) parts.push(`📋 **Other:** ${other.map(c => c.text).join(', ')}`);
+        if (notes) parts.push(`📝 **Your notes:** ${notes}`);
+        parts.push('\n⚕️ This is general guidance — check with your healthcare provider before changing your programme.');
+        return parts.join('\n');
+    };
+
+    // One-line reminder appended to non-workout answers.
+    const summaryLine = has
+        ? `\n\n⚠️ On file: ${all.map(c => `${c.text} (${c.type})`).join(', ')}${notes ? ` | notes: ${notes}` : ''}.`
+        : '';
+
+    return { all, notes, injuries, conditions, allergies, other, has, buildAdvisory, summaryLine };
+}
+
+function generateOfflineResponse(query: string, workouts: any[], userProfile?: any, healthContext?: any): string {
     const lq = query.toLowerCase();
+    const med = buildMedicalContext(healthContext);
 
     // Build personal context from workouts
     let personalContext = '';
@@ -169,6 +266,55 @@ function generateOfflineResponse(query: string, workouts: any[], userProfile?: a
         if (metrics.length > 0) {
             personalContext += `\n📋 Your profile: ${metrics.join(' | ')}`;
         }
+    }
+
+    // Every branch below ends with `${personalContext}`, so hanging the medical
+    // advisory off it makes all of them injury-aware in one place.
+    personalContext += med.buildAdvisory();
+
+    // ──── MEDICAL / INJURY / CONDITION QUERIES ────
+    // Checked FIRST: "what injuries do I have" must never fall through to a
+    // generic keyword branch (e.g. "back injury" used to hit the back-workout
+    // answer, and "what injury do I have" hit the catch-all).
+    if (
+        lq.includes('injur') || lq.includes('medical') || lq.includes('condition') ||
+        lq.includes('allerg') || lq.includes('diagnos') || lq.includes('health issue') ||
+        lq.includes('hurt') || lq.includes('pain')
+    ) {
+        if (!med.has) {
+            return `You don't have any injuries or medical conditions saved yet, so I'm giving you unrestricted advice right now.
+
+To add them:
+1. Open the **Profile** screen
+2. Scroll to **Medical & Injuries**
+3. Add your injuries, health conditions, or allergies
+
+Once they're saved I'll factor them into every workout and nutrition answer — swapping out risky exercises for safe alternatives automatically.`;
+        }
+
+        let response = `Here's the medical profile I have on file for you:\n`;
+        if (med.injuries.length > 0) {
+            response += `\n🩹 **Injuries (${med.injuries.length}):**\n`;
+            med.injuries.forEach(i => { response += `  • ${i.text}\n`; });
+        }
+        if (med.conditions.length > 0) {
+            response += `\n🏥 **Health conditions (${med.conditions.length}):**\n`;
+            med.conditions.forEach(c => { response += `  • ${c.text}\n`; });
+        }
+        if (med.allergies.length > 0) {
+            response += `\n⚡ **Allergies/intolerances (${med.allergies.length}):**\n`;
+            med.allergies.forEach(a => { response += `  • ${a.text}\n`; });
+        }
+        if (med.other.length > 0) {
+            response += `\n📋 **Other (${med.other.length}):**\n`;
+            med.other.forEach(o => { response += `  • ${o.text}\n`; });
+        }
+        if (med.notes) response += `\n📝 **Your notes:** ${med.notes}\n`;
+
+        response += `\n**How this changes your training:**`;
+        response += med.buildAdvisory();
+        response += `\n\nUpdate these anytime in **Profile → Medical & Injuries**.`;
+        return response;
     }
 
     // ──── HOW MAINTENANCE / BMR / TDEE IS CALCULATED ────
@@ -773,7 +919,9 @@ Hold each stretch for 20-30 seconds:
     }
 
     // ──── GENERAL GREETING / HELLO ────
-    if (lq.includes('hello') || lq.includes('hi') || lq.includes('hey') || lq.match(/^(yo|sup|what's up)/)) {
+    // Word-boundary match: a bare `includes('hi')` also fired on "this", "which"
+    // and "thigh", hijacking unrelated questions into the greeting reply.
+    if (/\b(hello|hi|hey|yo|sup|what's up|good morning|good evening|good afternoon)\b/.test(lq)) {
         return `Hey there! 👋 I'm your AI Coach. Here's what I can help you with:
 
 • 📋 **Workout Plans** — "Give me a weekly workout plan" or "What should I train today?"
@@ -1092,7 +1240,7 @@ INSTRUCTIONS:
         } catch (aiError: any) {
             console.log(`${model} (${modelConfig.provider}) API error, using offline fallback:`, aiError.message);
             // Fallback to offline response with body metrics
-            assistantContent = generateOfflineResponse(message, workouts, userRecord);
+            assistantContent = generateOfflineResponse(message, workouts, userRecord, healthContext);
         }
 
         // 8. Save the assistant's response to DB
@@ -1143,5 +1291,8 @@ router.delete('/history', authenticateToken, async (req: any, res) => {
         res.status(500).json({ error: 'Failed to clear chat history' });
     }
 });
+
+// Exported so the offline fallback can be exercised directly in tests.
+export { generateOfflineResponse };
 
 export default router;
