@@ -663,7 +663,7 @@ export default function AIScreen() {
                 medicalConditions: medicalState.conditions.map(c => ({ text: c.text, type: c.type })),
                 medicalNotes: medicalState.additionalNotes || '',
             };
-            const ctrl = new AbortController(); const tid = setTimeout(() => ctrl.abort(), 15000);
+            const ctrl = new AbortController(); const tid = setTimeout(() => ctrl.abort(), 60000);
             const res = await fetch(`${API_URL}/ai/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -707,7 +707,7 @@ export default function AIScreen() {
                         medicalConditions: medicalState.conditions.map(c => ({ text: c.text, type: c.type })),
                         medicalNotes: medicalState.additionalNotes || '',
                     };
-                    const ctrl = new AbortController(); const tid = setTimeout(() => ctrl.abort(), 15000);
+                    const ctrl = new AbortController(); const tid = setTimeout(() => ctrl.abort(), 60000);
                     const res = await fetch(`${API_URL}/ai/chat`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

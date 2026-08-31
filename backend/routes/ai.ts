@@ -964,6 +964,12 @@ Feel free to ask anything specific and I'll give you a detailed answer! 🏋️$
 // ═════════════════════════════════════════════
 // POST /ai/chat — Send message, get personalized AI response
 // ═════════════════════════════════════════════
+// Output budget for one coach reply. 500 was too tight: the newer Gemini
+// models spend part of this budget on internal reasoning before emitting any
+// visible text, so answers were being cut off mid-sentence. The system prompt
+// still asks for 2-4 paragraphs, so this is headroom, not a target length.
+const MAX_ANSWER_TOKENS = 2048;
+
 // Helper: call Anthropic Claude API
 async function callClaude(systemPrompt: string, messages: any[], apiModel: string): Promise<string> {
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -979,7 +985,7 @@ async function callClaude(systemPrompt: string, messages: any[], apiModel: strin
         },
         body: JSON.stringify({
             model: apiModel,
-            max_tokens: 500,
+            max_tokens: MAX_ANSWER_TOKENS,
             system: systemPrompt,
             messages: userMessages,
         }),
@@ -1025,7 +1031,7 @@ async function callGemini(systemPrompt: string, messages: any[], apiModel: strin
                 body: JSON.stringify({
                     systemInstruction: { parts: [{ text: systemPrompt }] },
                     contents,
-                    generationConfig: { maxOutputTokens: 500, temperature: 0.7 },
+                    generationConfig: { maxOutputTokens: MAX_ANSWER_TOKENS, temperature: 0.7 },
                 }),
             }
         );
@@ -1033,7 +1039,25 @@ async function callGemini(systemPrompt: string, messages: any[], apiModel: strin
         if (res.ok) {
             const data: any = await res.json();
             if (candidate !== apiModel) console.log(`Gemini: ${apiModel} unavailable, served by ${candidate}`);
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
+
+            // Join every text part. Reading only parts[0] truncated the answer
+            // whenever the model split its reply across parts.
+            const cand = data.candidates?.[0];
+            const text = (cand?.content?.parts || [])
+                .map((p: any) => p?.text)
+                .filter((t: any) => typeof t === 'string')
+                .join('');
+
+            if (!text) {
+                // An empty reply with MAX_TOKENS means the budget was spent
+                // before any visible text was produced.
+                console.log(`Gemini returned no text (finishReason: ${cand?.finishReason})`);
+                throw new Error(`Gemini API error: empty response (${cand?.finishReason || 'unknown'})`);
+            }
+            if (cand?.finishReason === 'MAX_TOKENS') {
+                console.log(`Gemini hit MAX_TOKENS at ${MAX_ANSWER_TOKENS} — answer may be cut short`);
+            }
+            return text;
         }
 
         // Include the response body — a bare status code hides the actual cause
@@ -1067,7 +1091,7 @@ async function callDeepSeek(systemPrompt: string, messages: any[], apiModel: str
                 { role: 'system', content: systemPrompt },
                 ...messages.filter(m => m.role !== 'system'),
             ],
-            max_tokens: 500,
+            max_tokens: MAX_ANSWER_TOKENS,
             temperature: 0.7,
         }),
     });
@@ -1254,7 +1278,7 @@ INSTRUCTIONS:
                 const completion = await openai.chat.completions.create({
                     model: modelConfig.apiModel,
                     messages: openaiMessages,
-                    max_tokens: 500,
+                    max_tokens: MAX_ANSWER_TOKENS,
                     temperature: 0.7,
                 });
                 assistantContent = completion.choices[0].message.content || "I couldn't generate a response. Please try again!";
